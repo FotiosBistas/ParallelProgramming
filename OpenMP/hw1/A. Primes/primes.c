@@ -77,8 +77,8 @@ int main()
 	double finish = omp_get_wtime(); 
 	double time_it_took = finish - start; 
 	printf("[serial] count = %ld, last = %ld (time = %lf)\n", count, lastprime, time_it_took);
-	//set the runtime threads to two for each next parallel region 
-	omp_set_num_threads(4);
+
+
 	start = omp_get_wtime(); 
 	openmp_primes(UPTO);        /* time it */
 	finish = omp_get_wtime(); 
