@@ -46,7 +46,7 @@ void openmp_primes(long int n) {
 	 * Don't add/remove/change global variables
 	 */
 	//static scheduling is best here since we know how to best divide the work between threads 
-	#pragma omp parallel for private(num, divisor,remainder,quotient) reduction(+:count) lastprivate(lastprime)
+	#pragma omp parallel for schedule(static,100000)  private(num, divisor,remainder,quotient) reduction(+:count) lastprivate(lastprime)
 	for (i = 0; i < (n-1)/2; ++i) {    /* For every odd number */
 		num = 2*i + 3;
 
@@ -73,8 +73,13 @@ int main()
 {
 	printf("Serial and parallel prime number calculations:\n\n");
 	
+	//prevent dynamic thread number 
+	omp_set_dynamic(0); 
+
 	/* Time the following to compare performance 
 	 */
+
+
 	double start = omp_get_wtime(); 
 	serial_primes(UPTO);        /* time it */
 	double finish = omp_get_wtime(); 
