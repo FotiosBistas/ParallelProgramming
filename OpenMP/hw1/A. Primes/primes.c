@@ -45,6 +45,7 @@ void openmp_primes(long int n) {
 	 * Parallelize the serial algorithm but you are NOT allowed to change it!
 	 * Don't add/remove/change global variables
 	 */
+	//static scheduling is best here since we know how to best divide the work between threads 
 	#pragma omp parallel for private(num, divisor,remainder,quotient) reduction(+:count) lastprivate(lastprime)
 	for (i = 0; i < (n-1)/2; ++i) {    /* For every odd number */
 		num = 2*i + 3;
@@ -55,6 +56,8 @@ void openmp_primes(long int n) {
 			divisor += 2;                  /* Divide by the next odd */
 			quotient  = num / divisor;  
 			remainder = num % divisor;  
+		//reason for not going past sqrt: if the number was not a prime 
+		//it could have been expressed as a factor of two numbers before the sqrt
 		} while (remainder && divisor <= quotient);  /* Don't go past sqrt */
 
 		if (remainder || divisor == num) /* num is prime */
