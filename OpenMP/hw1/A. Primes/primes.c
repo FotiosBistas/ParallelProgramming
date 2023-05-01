@@ -45,8 +45,7 @@ void openmp_primes(long int n) {
 	 * Parallelize the serial algorithm but you are NOT allowed to change it!
 	 * Don't add/remove/change global variables
 	 */
-	omp_set_num_threads(4);
-	#pragma omp parallel for private(num, divisor,remainder,quotient) reduction(+:count)
+	#pragma omp parallel for private(num, divisor,remainder,quotient) reduction(+:count) lastprivate(lastprime)
 	for (i = 0; i < (n-1)/2; ++i) {    /* For every odd number */
 		num = 2*i + 3;
 
@@ -78,6 +77,8 @@ int main()
 	double finish = omp_get_wtime(); 
 	double time_it_took = finish - start; 
 	printf("[serial] count = %ld, last = %ld (time = %lf)\n", count, lastprime, time_it_took);
+	//set the runtime threads to two for each next parallel region 
+	omp_set_num_threads(4);
 	start = omp_get_wtime(); 
 	openmp_primes(UPTO);        /* time it */
 	finish = omp_get_wtime(); 
