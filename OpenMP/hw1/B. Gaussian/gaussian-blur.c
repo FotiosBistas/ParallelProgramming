@@ -317,7 +317,7 @@ void gaussian_blur_omp_tasks(int radius, img_t *imgin, img_t *imgout)
 						}    
 					}
 				}	
-				#pragma omp taskwait
+				#pragma omp taskwait //wait for the task below the j to finish as it is essentatial for completing the algorithm 
 				imgout->red[i*width+j] = round(redSum/weightSum);
 				imgout->green[i*width+j] = round(greenSum/weightSum);
 				imgout->blue[i*width+j] = round(blueSum/weightSum);
