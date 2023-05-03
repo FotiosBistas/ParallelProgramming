@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 # Metrics for the number of threads used, starting from 1
-#metrics = [36.329936, 19.9787595, 13.7412165, 9.913166]
+metrics = [36.329936, 19.9787595, 13.7412165, 9.913166]
 chunk_metrics = [38.96675425, 9.61938825, 6.7996385, 5.0814925]
 
 # Create a list of the number of threads used

@@ -47,6 +47,7 @@ void openmp_primes_with_chunk_size(long int n) {
 	 * Don't add/remove/change global variables
 	 */
 	//static scheduling is best here since it is essential to know the thread execution order
+	omp_set_dynamic(0);
 	#pragma omp parallel for schedule(static,CHUNK_SIZE) default(none) firstprivate(n) private(num, divisor,remainder,quotient) reduction(+:count) lastprivate(lastprime)
 	for (i = 0; i < (n-1)/2; ++i) {    /* For every odd number */
 		num = 2*i + 3;
@@ -81,6 +82,7 @@ void openmp_primes(long int n) {
 	 * Don't add/remove/change global variables
 	 */
 	//static scheduling is best here since it is essential to know the thread execution order
+	omp_set_dynamic(0);
 	#pragma omp parallel for schedule(static)  private(num, divisor,remainder,quotient) default(none) firstprivate(n) reduction(+:count) lastprivate(lastprime)
 	for (i = 0; i < (n-1)/2; ++i) {    /* For every odd number */
 		num = 2*i + 3;
@@ -107,8 +109,6 @@ int main()
 {
 	printf("Serial and parallel prime number calculations:\n\n");
 	
-	//prevent dynamic thread number 
-	omp_set_dynamic(0); 
 
 	/* Time the following to compare performance 
 	 */
