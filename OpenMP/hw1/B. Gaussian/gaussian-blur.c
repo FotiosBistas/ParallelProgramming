@@ -243,10 +243,12 @@ void gaussian_blur_omp_loops(int radius, img_t *imgin, img_t *imgout)
 	int width = imgin->header.width, height = imgin->header.height;
 	double row, col;
 	double weightSum = 0.0, redSum = 0.0, greenSum = 0.0, blueSum = 0.0;
-	#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum,radius,imgout,width,height) private(i,j,row,col) default(none) shared(imgin)
+	
+	#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum,radius,imgout,width,height) private(i,j,row,col) default(none) shared(imgin) if(height >= width)
 	for (i = 0; i < height; i++)
 	{
-
+		
+		#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum,radius,imgout,width,height,i) private(j,row,col) default(none) shared(imgin) if(height <  width)
 		for (j = 0; j < width ; j++) 
 		{
 			for (row = i-radius; row <= i + radius; row++)
