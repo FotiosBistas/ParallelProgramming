@@ -243,7 +243,7 @@ void gaussian_blur_omp_loops(int radius, img_t *imgin, img_t *imgout)
 	int width = imgin->header.width, height = imgin->header.height;
 	double row, col;
 	double weightSum = 0.0, redSum = 0.0, greenSum = 0.0, blueSum = 0.0;
-	#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum) private(i,j,row,col)
+	#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum,radius,imgout,width,height) private(i,j,row,col) default(none) shared(imgin)
 	for (i = 0; i < height; i++)
 	{
 
@@ -288,42 +288,47 @@ void gaussian_blur_omp_tasks(int radius, img_t *imgin, img_t *imgout)
 	int width = imgin->header.width, height = imgin->header.height;
 	double row, col;
 	double weightSum = 0.0, redSum = 0.0, greenSum = 0.0, blueSum = 0.0;
-	#pragma omp parallel 
+	#pragma omp parallel private(i,j,row,col) firstprivate(weightSum,redSum,greenSum,blueSum,radius,imgout,width,height) default(none) shared(imgin)
 	#pragma omp single
 	for (i = 0; i < height; i++)
 	{
 
-		#pragma omp task firstprivate(i,weightSum,redSum,greenSum,blueSum) private(j,row,col) 
-		for (j = 0; j < width ; j++) 
+		#pragma omp task firstprivate(i,weightSum,redSum,greenSum,blueSum,radius,imgout,width,height) private(j,row,col) default(none) shared(imgin)
 		{
-			for (row = i-radius; row <= i + radius; row++)
+			for (j = 0; j < width ; j++) 
 			{
-				for (col = j-radius; col <= j + radius; col++) 
+				#pragma omp task firstprivate(i,radius,imgout,width,height,j) private(row,col) default(none) shared(imgin,weightSum,redSum,greenSum,blueSum)
 				{
-					int x = clamp(col, 0, width-1);
-					int y = clamp(row, 0, height-1);
-					int tempPos = y * width + x;
-					double square = (col-j)*(col-j)+(row-i)*(row-i);
-					double sigma = radius*radius;
-					double weight = exp(-square / (2*sigma)) / (3.14*2*sigma);
+					for (row = i-radius; row <= i + radius; row++)
+					{
+						for (col = j-radius; col <= j + radius; col++) 
+						{
+							int x = clamp(col, 0, width-1);
+							int y = clamp(row, 0, height-1);
+							int tempPos = y * width + x;
+							double square = (col-j)*(col-j)+(row-i)*(row-i);
+							double sigma = radius*radius;
+							double weight = exp(-square / (2*sigma)) / (3.14*2*sigma);
 
-					redSum += imgin->red[tempPos] * weight;
-					greenSum += imgin->green[tempPos] * weight;
-					blueSum += imgin->blue[tempPos] * weight;
-					weightSum += weight;
-				}    
+							redSum += imgin->red[tempPos] * weight;
+							greenSum += imgin->green[tempPos] * weight;
+							blueSum += imgin->blue[tempPos] * weight;
+							weightSum += weight;
+						}    
+					}
+				}	
+				#pragma omp taskwait
+				imgout->red[i*width+j] = round(redSum/weightSum);
+				imgout->green[i*width+j] = round(greenSum/weightSum);
+				imgout->blue[i*width+j] = round(blueSum/weightSum);
+
+				redSum = 0;
+				greenSum = 0;
+				blueSum = 0;
+				weightSum = 0;
 			}
-			imgout->red[i*width+j] = round(redSum/weightSum);
-			imgout->green[i*width+j] = round(greenSum/weightSum);
-			imgout->blue[i*width+j] = round(blueSum/weightSum);
-
-			redSum = 0;
-			greenSum = 0;
-			blueSum = 0;
-			weightSum = 0;
 		}
-	}
-	#pragma omp taskwait
+	}//implicit barrier tasks must finish 
 }
 
 
