@@ -46,7 +46,6 @@ void openmp_primes_with_chunk_size(long int n) {
 	 * Parallelize the serial algorithm but you are NOT allowed to change it!
 	 * Don't add/remove/change global variables
 	 */
-	//static scheduling is best here since it is essential to know the thread execution order
 	omp_set_dynamic(0);
 	#pragma omp parallel for schedule(static,CHUNK_SIZE) default(none) firstprivate(n) private(num, divisor,remainder,quotient) reduction(+:count) lastprivate(lastprime)
 	for (i = 0; i < (n-1)/2; ++i) {    /* For every odd number */
@@ -83,7 +82,6 @@ void openmp_primes_with_chunk_size_guided(long int n) {
 	 * Parallelize the serial algorithm but you are NOT allowed to change it!
 	 * Don't add/remove/change global variables
 	 */
-	//static scheduling is best here since it is essential to know the thread execution order
 	omp_set_dynamic(0);
 	#pragma omp parallel for schedule(guided,CHUNK_SIZE) default(none) firstprivate(n) private(num, divisor,remainder,quotient) reduction(+:count) reduction(max:lastprime)
 	for (i = 0; i < (n-1)/2; ++i) {    /* For every odd number */
@@ -118,7 +116,6 @@ void openmp_primes_with_chunk_size_dynamic(long int n) {
 	 * Parallelize the serial algorithm but you are NOT allowed to change it!
 	 * Don't add/remove/change global variables
 	 */
-	//static scheduling is best here since it is essential to know the thread execution order
 	omp_set_dynamic(0);
 	#pragma omp parallel for schedule(dynamic,CHUNK_SIZE) default(none) firstprivate(n) private(num, divisor,remainder,quotient) reduction(+:count) reduction(max:lastprime)
 	for (i = 0; i < (n-1)/2; ++i) {    /* For every odd number */
@@ -154,7 +151,6 @@ void openmp_primes_without_chunk_size_dynamic(long int n) {
 	 * Parallelize the serial algorithm but you are NOT allowed to change it!
 	 * Don't add/remove/change global variables
 	 */
-	//static scheduling is best here since it is essential to know the thread execution order
 	omp_set_dynamic(0);
 	#pragma omp parallel for schedule(dynamic) default(none) firstprivate(n) private(num, divisor,remainder,quotient) reduction(+:count) reduction(max:lastprime)
 	for (i = 0; i < (n-1)/2; ++i) {    /* For every odd number */
@@ -190,7 +186,6 @@ void openmp_primes_without_chunk_size_guided(long int n) {
 	 * Parallelize the serial algorithm but you are NOT allowed to change it!
 	 * Don't add/remove/change global variables
 	 */
-	//static scheduling is best here since it is essential to know the thread execution order
 	omp_set_dynamic(0);
 	#pragma omp parallel for schedule(guided) default(none) firstprivate(n) private(num, divisor,remainder,quotient) reduction(+:count) reduction(max:lastprime)
 	for (i = 0; i < (n-1)/2; ++i) {    /* For every odd number */
@@ -225,7 +220,6 @@ void openmp_primes(long int n) {
 	 * Parallelize the serial algorithm but you are NOT allowed to change it!
 	 * Don't add/remove/change global variables
 	 */
-	//static scheduling is best here since it is essential to know the thread execution order
 	omp_set_dynamic(0);
 	#pragma omp parallel for schedule(static)  private(num, divisor,remainder,quotient) default(none) firstprivate(n) reduction(+:count) reduction(max:lastprime)
 	for (i = 0; i < (n-1)/2; ++i) {    /* For every odd number */
