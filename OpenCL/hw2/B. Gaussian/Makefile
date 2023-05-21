@@ -5,7 +5,7 @@ CFLAGS=-I $(IDIR) -L $(LDIR)
 ODIR="./bin/"
 LDIR="C:/Program Files (x86)/OCL_SDK_Light/lib/x86"
 
-LIBS=-lm -lOpenCL
+LIBS=-lm -lOpenCL -fopenmp
 
 DEPS = cl.h
 
