@@ -9,13 +9,16 @@ LIBS=-lm -lOpenCL
 
 DEPS = cl.h
 
-OBJ = array-addition.o 
-
+OBJ1 = array-addition.o 
+OBJ2 = gaussian-blur.o 
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-array-addition: $(OBJ)
+array-addition: $(OBJ1)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+
+gaussian-blur: $(OBJ2)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean
