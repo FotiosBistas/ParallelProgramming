@@ -5,13 +5,14 @@
 #define N 1024
 
 // Kernel source code
-const char* kernelSource =
-"__kernel void vectorAdd(__global const float* a, __global const float* b, __global float* c) {"
-"    int i = get_global_id(0);"
-"    c[i] = a[i] + b[i];"
-"}";
+const char *kernelSource =
+    "__kernel void vectorAdd(__global const float* a, __global const float* b, __global float* c) {"
+    "    int i = get_global_id(0);"
+    "    c[i] = a[i] + b[i];"
+    "}";
 
-int main() {
+int main()
+{
     // OpenCL setup
     cl_platform_id platform;
     cl_device_id device;
@@ -32,7 +33,7 @@ int main() {
     commandQueue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
 
     // Create the program from the kernel source code
-    program = clCreateProgramWithSource(context, 1, (const char**)&kernelSource, NULL, &err);
+    program = clCreateProgramWithSource(context, 1, (const char **)&kernelSource, NULL, &err);
     clBuildProgram(program, 1, &device, NULL, NULL, NULL);
 
     // Create the kernel
@@ -41,7 +42,8 @@ int main() {
     // Input data
     float a[N];
     float b[N];
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
+    {
         a[i] = (float)i;
         b[i] = (float)i;
     }
@@ -52,9 +54,9 @@ int main() {
     bufferC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * N, NULL, NULL);
 
     // Set the kernel arguments
-    clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&bufferA);
-    clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&bufferB);
-    clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&bufferC);
+    clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&bufferA);
+    clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&bufferB);
+    clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&bufferC);
 
     // Enqueue the kernel
     size_t globalSize = N;
