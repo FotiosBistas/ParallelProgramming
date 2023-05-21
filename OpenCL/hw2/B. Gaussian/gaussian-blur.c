@@ -6,6 +6,7 @@
 #include <math.h>
 #include <sys/time.h>
 #include <omp.h>
+#include <CL/cl.h>
 
 #pragma pack(push, 2)          
 	typedef struct bmpheader_ 
@@ -240,6 +241,46 @@ void gaussian_blur_serial(int radius, img_t *imgin, img_t *imgout)
 void gaussian_blur_omp_loops(int radius, img_t *imgin, img_t *imgout)
 {
 	/* TODO: Implement parallel Gaussian Blur using OpenMP loop parallelization */
+	int i, j;
+	int width = imgin->header.width, height = imgin->header.height;
+	double row, col;
+	double weightSum = 0.0, redSum = 0.0, greenSum = 0.0, blueSum = 0.0;
+	
+	omp_set_dynamic(0);
+	#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum,radius,imgout,width,height) private(i,j,row,col) default(none) shared(imgin) if(height >= width)
+	for (i = 0; i < height; i++)
+	{
+		
+		#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum,radius,imgout,width,height,i) private(j,row,col) default(none) shared(imgin) if(height <  width)
+		for (j = 0; j < width ; j++) 
+		{
+			for (row = i-radius; row <= i + radius; row++)
+			{
+				for (col = j-radius; col <= j + radius; col++) 
+				{
+					int x = clamp(col, 0, width-1);
+					int y = clamp(row, 0, height-1);
+					int tempPos = y * width + x;
+					double square = (col-j)*(col-j)+(row-i)*(row-i);
+					double sigma = radius*radius;
+					double weight = exp(-square / (2*sigma)) / (3.14*2*sigma);
+
+					redSum += imgin->red[tempPos] * weight;
+					greenSum += imgin->green[tempPos] * weight;
+					blueSum += imgin->blue[tempPos] * weight;
+					weightSum += weight;
+				}    
+			}
+			imgout->red[i*width+j] = round(redSum/weightSum);
+			imgout->green[i*width+j] = round(greenSum/weightSum);
+			imgout->blue[i*width+j] = round(blueSum/weightSum);
+
+			redSum = 0;
+			greenSum = 0;
+			blueSum = 0;
+			weightSum = 0;
+		}
+	}
 }
 
 
@@ -247,6 +288,52 @@ void gaussian_blur_omp_loops(int radius, img_t *imgin, img_t *imgout)
 void gaussian_blur_omp_tasks(int radius, img_t *imgin, img_t *imgout)
 {
 	/* TODO: Implement parallel Gaussian Blur using OpenMP tasks */
+	int i, j;
+	int width = imgin->header.width, height = imgin->header.height;
+	double row, col;
+	double weightSum = 0.0, redSum = 0.0, greenSum = 0.0, blueSum = 0.0;
+	omp_set_dynamic(0);
+	#pragma omp parallel private(i,j,row,col) firstprivate(weightSum,redSum,greenSum,blueSum,radius,imgout,width,height) default(none) shared(imgin)
+	#pragma omp single
+	for (i = 0; i < height; i++)
+	{
+
+		#pragma omp task firstprivate(i,weightSum,redSum,greenSum,blueSum,radius,imgout,width,height) private(j,row,col) default(none) shared(imgin)
+		{
+			for (j = 0; j < width ; j++) 
+			{
+				#pragma omp task firstprivate(i,radius,imgout,width,height,j) private(row,col) default(none) shared(imgin,weightSum,redSum,greenSum,blueSum)
+				{
+					for (row = i-radius; row <= i + radius; row++)
+					{
+						for (col = j-radius; col <= j + radius; col++) 
+						{
+							int x = clamp(col, 0, width-1);
+							int y = clamp(row, 0, height-1);
+							int tempPos = y * width + x;
+							double square = (col-j)*(col-j)+(row-i)*(row-i);
+							double sigma = radius*radius;
+							double weight = exp(-square / (2*sigma)) / (3.14*2*sigma);
+
+							redSum += imgin->red[tempPos] * weight;
+							greenSum += imgin->green[tempPos] * weight;
+							blueSum += imgin->blue[tempPos] * weight;
+							weightSum += weight;
+						}    
+					}
+				}	
+				#pragma omp taskwait //wait for the task below the j to finish as it is essentatial for completing the algorithm 
+				imgout->red[i*width+j] = round(redSum/weightSum);
+				imgout->green[i*width+j] = round(greenSum/weightSum);
+				imgout->blue[i*width+j] = round(blueSum/weightSum);
+
+				redSum = 0;
+				greenSum = 0;
+				blueSum = 0;
+				weightSum = 0;
+			}
+		}
+	}//implicit barrier tasks must finish 
 }
 
 /* Parallel Gaussian Blur with OpenCL */
@@ -300,10 +387,12 @@ int main(int argc, char *argv[])
 	char *inputfile, *noextfname;   
 	char seqoutfile[128], paroutfile_loops[128], paroutfile_tasks[128];
 	img_t imgin, imgout, pimgout_loops, pimgout_tasks;
+	
 
-	if (argc < 3)
+	//custom modification for easier tests 4 arguments  
+	if (argc < 4)
 	{
-		fprintf(stderr, "Syntax: %s <blur-radius> <filename>, \n\te.g. %s 2 500.bmp\n", 
+		fprintf(stderr, "Syntax error not enough arguments were provided: %s <blur-radius> <filename> <num_threads>, \n\te.g. %s 2 500.bmp\n", 
 			argv[0], argv[0]);
 		fprintf(stderr, "Available images: 500.bmp, 1000.bmp, 1500.bmp\n");
 		exit(1);
@@ -317,6 +406,19 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Radius should be an integer >= 0; exiting.");
 		exit(1);
 	}
+
+	//custom modification for easier tests 
+	int num_threads = atoi(argv[3]);
+
+	if(num_threads < 0){
+		fprintf(stderr, "Number of threads given to open mp should be larger than 0\n");
+		exit(1);
+	}
+
+	//setting dynamic threads 
+	printf("Setting dynamic threads to: %d\n",num_threads);
+	omp_set_dynamic(0);//don't leave the thread number up to the runtime 
+	omp_set_num_threads(num_threads);
 
 	noextfname = remove_ext(inputfile, '.', '/');
 	sprintf(seqoutfile, "%s-r%d-serial.bmp", noextfname, radius);

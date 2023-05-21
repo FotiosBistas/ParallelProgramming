@@ -5,24 +5,24 @@ CFLAGS=-I $(IDIR) -L $(LDIR)
 ODIR="./bin/"
 LDIR="C:/Program Files (x86)/OCL_SDK_Light/lib/x86"
 
-LIBS=-lm -fopenmp -lOpenCL
+LIBS=-lm -lOpenCL -fopenmp
 
 DEPS = cl.h
 
 OBJ1 = array-addition.o 
 OBJ2 = gaussian-blur.o 
 
-$(ODIR)%.o: %.c $(DEPS)
+%.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 array-addition: $(OBJ1)
-	$(CC) -o $(ODIR)$@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 gaussian-blur: $(OBJ2)
-	$(CC) -o $(ODIR)$@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ 
+	rm -f *.o *~ core $(INCDIR)/*~ 
 
