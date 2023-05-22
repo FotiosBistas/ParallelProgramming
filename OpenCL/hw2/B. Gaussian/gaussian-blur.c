@@ -310,27 +310,23 @@ void gaussian_blur_omp_tasks(int radius, img_t *imgin, img_t *imgout)
 		{
 			for (j = 0; j < width ; j++) 
 			{
-				#pragma omp task firstprivate(i,radius,imgout,width,height,j) private(row,col) default(none) shared(imgin,weightSum,redSum,greenSum,blueSum)
+				for (row = i-radius; row <= i + radius; row++)
 				{
-					for (row = i-radius; row <= i + radius; row++)
+					for (col = j-radius; col <= j + radius; col++) 
 					{
-						for (col = j-radius; col <= j + radius; col++) 
-						{
-							int x = clamp(col, 0, width-1);
-							int y = clamp(row, 0, height-1);
-							int tempPos = y * width + x;
-							double square = (col-j)*(col-j)+(row-i)*(row-i);
-							double sigma = radius*radius;
-							double weight = exp(-square / (2*sigma)) / (3.14*2*sigma);
+						int x = clamp(col, 0, width-1);
+						int y = clamp(row, 0, height-1);
+						int tempPos = y * width + x;
+						double square = (col-j)*(col-j)+(row-i)*(row-i);
+						double sigma = radius*radius;
+						double weight = exp(-square / (2*sigma)) / (3.14*2*sigma);
 
-							redSum += imgin->red[tempPos] * weight;
-							greenSum += imgin->green[tempPos] * weight;
-							blueSum += imgin->blue[tempPos] * weight;
-							weightSum += weight;
-						}    
-					}
-				}	
-				#pragma omp taskwait //wait for the task below the j to finish as it is essentatial for completing the algorithm 
+						redSum += imgin->red[tempPos] * weight;
+						greenSum += imgin->green[tempPos] * weight;
+						blueSum += imgin->blue[tempPos] * weight;
+						weightSum += weight;
+					}    
+				}
 				imgout->red[i*width+j] = round(redSum/weightSum);
 				imgout->green[i*width+j] = round(greenSum/weightSum);
 				imgout->blue[i*width+j] = round(blueSum/weightSum);
