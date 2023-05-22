@@ -340,10 +340,45 @@ void gaussian_blur_omp_tasks(int radius, img_t *imgin, img_t *imgout)
 	}//implicit barrier tasks must finish 
 }
 
+//helper function to read kernel from file 
+size_t read_kernel_from_file(char** source_str, char* filename){
+	//read the kernel from the kernel file 
+	FILE *fp = NULL; 
+	size_t source_size, program_size;
+	// try to open file 
+	fp = fopen(filename,"rb");
+	if(!fp){
+		fprintf(stderr, "Failed to load kernel: %s\n",filename);
+		return -1; 
+	}
+	//seek the end of the file to determine kernel size
+	fseek(fp, 0, SEEK_END); 
+	program_size = ftell(fp);
+	rewind(fp);
+	//allocate memory for kernel
+	*source_str = (char*)malloc(program_size + 1); 
+	(*source_str)[program_size] = '\0';
+	//read the kernel from the file 
+	fread(*source_str, sizeof(char), program_size, fp); 
+	fclose(fp);
+	return program_size;
+}
+
 /* Parallel Gaussian Blur with OpenCL */
 cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 {
 	/* TODO: Implement parallel Gaussian Blur using OpenCL */
+
+	char* source_str;
+
+	if(read_kernel_from_file(&source_str, "gaussian-blur.cl") < 0){
+		fprintf(stderr, "Error while calling read kernel from file"); 
+		return 0; 
+	};
+
+	printf("Read kernel for GPU acceleration: \n %s\n", source_str);
+
+	free(source_str);
 	return 0; 
 }
 
@@ -351,6 +386,17 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 cl_ulong gaussian_blur_opencl_cpu(int radius, img_t *imgin, img_t *imgout)
 {
 	/* TODO: Implement parallel Gaussian Blur using OpenCL */
+	char* source_str;
+
+	if(read_kernel_from_file(&source_str, "gaussian-blur.cl") < 0) {
+		fprintf(stderr, "Error while calling read kernel from file");
+		return 0; 
+	};
+
+	printf("Read kernel for GPU acceleration: \n %s\n", source_str);
+
+	free(source_str);
+
 	return 0;
 }
 

@@ -1,0 +1,17 @@
+/*
+Notes some basic terms: 
+Kernel(Blueprint function which does the work)
+Work item(a unit of work executing a kernel)
+Work groups(collection of work items)
+Memory(local/global/private/constant)
+Buffer(area of memory on the GPU)
+Compute unit(work group + associated memory)
+*/
+
+
+/*
+notes kernels and work items: 
+get_global_id() uniquely identifies each work item executing the kernel 
+get_local_id() uniquely identifiers each work item in a work group
+
+*/
