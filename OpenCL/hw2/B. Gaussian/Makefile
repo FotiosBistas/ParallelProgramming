@@ -1,25 +1,18 @@
 IDIR="C:/Program Files (x86)/OCL_SDK_Light/include/"
 CC=gcc
-CFLAGS=-I $(IDIR) -L $(LDIR)
+CFLAGS=-I $(IDIR) -L $(LDIR) 
 
 ODIR="./bin/"
 LDIR="C:/Program Files (x86)/OCL_SDK_Light/lib/x86"
 
-LIBS=-lm -lOpenCL -fopenmp
+LIBS=-lm -fopenmp -lOpenCL
 
-DEPS = cl.h
 
-OBJ1 = array-addition.o 
-OBJ2 = gaussian-blur.o 
+array-addition: array-addition.c 
+	$(CC) -o $(ODIR)$@ $^ $(CFLAGS) $(LIBS)
 
-%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
-
-array-addition: $(OBJ1)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
-
-gaussian-blur: $(OBJ2)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+gaussian-blur: gaussian-blur.c
+	$(CC) -o $(ODIR)$@ $^ $(CFLAGS)  $(LIBS) 
 
 .PHONY: clean
 
