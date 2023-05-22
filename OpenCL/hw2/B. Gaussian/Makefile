@@ -4,6 +4,7 @@ CFLAGS=-I $(IDIR) -L $(LDIR)
 
 ODIR="./bin/"
 LDIR="C:/Program Files (x86)/OCL_SDK_Light/lib/x86"
+IMAGEDIR = "./producedImages/"
 
 LIBS=-lm -fopenmp -lOpenCL
 
@@ -13,6 +14,10 @@ array-addition: array-addition.c
 
 gaussian-blur: gaussian-blur.c
 	$(CC) -o $(ODIR)$@ $^ $(CFLAGS)  $(LIBS) 
+
+
+clear-images: 
+	rm -f $(IMAGEDIR)*.bmp  *~ core $(INCDIR)/*~
 
 .PHONY: clean
 

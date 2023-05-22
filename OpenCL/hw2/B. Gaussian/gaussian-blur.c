@@ -47,6 +47,8 @@ void gaussian_blur_omp(int, img_t *, img_t *);
 void gaussian_blur_opencl(int, img_t *, img_t *);
 
 
+const char* img_folder = "producedImages/";
+
 /* START of BMP utility functions */
 static
 void bmp_read_img_from_file(char *inputfile, img_t *img) 
@@ -98,12 +100,18 @@ void bmp_write_data_to_file(char *fname, img_t *img)
 {
 	FILE *file;
 	bmpheader_t *bmph = &(img->header);
-
-	file = fopen(fname, "wb");
+	//custom modification for image folder 
+	//all images created from the algorithm are written to the folder
+	char* name_with_folder = malloc(strlen(fname) + strlen(img_folder) + 1);
+	strcpy(name_with_folder, img_folder);
+	strcat(name_with_folder, fname);
+	//changed fname to name with folder 
+	file = fopen(name_with_folder, "wb");
 	fwrite(bmph, sizeof(bmpheader_t)+1, 1, file);
 	fseek(file, bmph->data, SEEK_SET);
 	fwrite(img->imgdata, bmph->arraywidth, 1, file);
 	fclose(file);
+	free(name_with_folder);
 }
 
 static
@@ -392,7 +400,7 @@ int main(int argc, char *argv[])
 	//custom modification for easier tests 4 arguments  
 	if (argc < 4)
 	{
-		fprintf(stderr, "Syntax error not enough arguments were provided: %s <blur-radius> <filename> <num_threads>, \n\te.g. %s 2 500.bmp\n", 
+		fprintf(stderr, "Syntax error not enough arguments were provided: %s <blur-radius> <filename> <num_threads>, \n\te.g. %s 2 500.bmp 3\n", 
 			argv[0], argv[0]);
 		fprintf(stderr, "Available images: 500.bmp, 1000.bmp, 1500.bmp\n");
 		exit(1);
@@ -484,7 +492,7 @@ int main(int argc, char *argv[])
 	bmp_img_free(&imgout);
 	bmp_img_free(&pimgout_loops);
 	bmp_img_free(&pimgout_tasks);
-	bmp_img_free(&pimgout_tasks);
+	bmp_img_free(&pimgout_opencl);
 
 	return 0;
 }

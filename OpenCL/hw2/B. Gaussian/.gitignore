@@ -4,6 +4,11 @@
 *.obj
 *.elf
 
+
+# Images 
+*.bmp
+producedImages/
+
 # Precompiled headers
 *.gch
 *.pch
