@@ -345,10 +345,17 @@ void gaussian_blur_omp_tasks(int radius, img_t *imgin, img_t *imgout)
 }
 
 /* Parallel Gaussian Blur with OpenCL */
-void gaussian_blur_opencl(int radius, img_t *imgin, img_t *imgout)
+void gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 {
 	/* TODO: Implement parallel Gaussian Blur using OpenCL */
 }
+
+/* Parallel Gaussian Blur with OpenCL */
+void gaussian_blur_opencl_cpu(int radius, img_t *imgin, img_t *imgout)
+{
+	/* TODO: Implement parallel Gaussian Blur using OpenCL */
+}
+
 
 
 double timeit(void (*func)(), int radius, 
@@ -390,11 +397,11 @@ char *remove_ext(char *str, char extsep, char pathsep)
 int main(int argc, char *argv[]) 
 {
 	int i, j, radius;
-	double exectime_serial = 0.0, exectime_omp_loops = 0.0, exectime_omp_tasks = 0.0, exectime_opencl = 0.0;
+	double exectime_serial = 0.0, exectime_omp_loops = 0.0, exectime_omp_tasks = 0.0, exectime_opencl_gpu = 0.0, exectime_opencl_cpu = 0.0;
 	struct timeval start, stop; 
 	char *inputfile, *noextfname;   
-	char seqoutfile[128], paroutfile_loops[128], paroutfile_tasks[128], paroutfile_opencl[128];
-	img_t imgin, imgout, pimgout_loops, pimgout_tasks, pimgout_opencl;
+	char seqoutfile[128], paroutfile_loops[128], paroutfile_tasks[128], paroutfile_opencl_gpu[128], paroutfile_opencl_cpu[128];
+	img_t imgin, imgout, pimgout_loops, pimgout_tasks, pimgout_opencl_gpu, pimgout_opencl_cpu;
 	
 
 	//custom modification for easier tests 4 arguments  
@@ -416,6 +423,7 @@ int main(int argc, char *argv[])
 	}
 
 	//custom modification for easier tests 
+	//pass threads through the command line 
 	int num_threads = atoi(argv[3]);
 
 	if(num_threads < 0){
@@ -433,19 +441,22 @@ int main(int argc, char *argv[])
 	sprintf(paroutfile_loops, "%s-r%d-omp-loops.bmp", noextfname, radius);
 	sprintf(paroutfile_tasks, "%s-r%d-omp-tasks.bmp", noextfname, radius);
 	//custom modification to display file with opencl 
-	sprintf(paroutfile_opencl,"%s-r%d-opencl.bmp", noextfname, radius);
+	sprintf(paroutfile_opencl_gpu,"%s-r%d-opencl-gpu.bmp", noextfname, radius);
+	sprintf(paroutfile_opencl_cpu, "%s-r%d-opencl-cpu.bmp", noextfname, radius);
 
 	bmp_read_img_from_file(inputfile, &imgin);
 	bmp_clone_empty_img(&imgin, &imgout);
 	bmp_clone_empty_img(&imgin, &pimgout_loops);
 	bmp_clone_empty_img(&imgin, &pimgout_tasks);
 	//custom modification 
-	bmp_clone_empty_img(&imgin, &pimgout_opencl);
+	bmp_clone_empty_img(&imgin, &pimgout_opencl_gpu);
+	bmp_clone_empty_img(&imgin, &pimgout_opencl_cpu);
 	bmp_rgb_alloc(&imgin);
 	bmp_rgb_alloc(&imgout);
 	bmp_rgb_alloc(&pimgout_loops);
 	bmp_rgb_alloc(&pimgout_tasks);
-	bmp_rgb_alloc(&pimgout_opencl);
+	bmp_rgb_alloc(&pimgout_opencl_gpu);
+	bmp_rgb_alloc(&pimgout_opencl_cpu);
 
 	printf("<<< Gaussian Blur (h=%d,w=%d,r=%d) >>>\n", imgin.header.height, 
 	       imgin.header.width, radius);
@@ -475,24 +486,33 @@ int main(int argc, char *argv[])
 	bmp_write_data_to_file(paroutfile_tasks, &pimgout_tasks);
 		
 
-	//custom modication to check time for OpenCL 
-	exectime_opencl = timeit(gaussian_blur_opencl, radius, &imgin, &pimgout_opencl);
+	//custom modication to check time for OpenCL gpu
+	exectime_opencl_gpu = timeit(gaussian_blur_opencl_gpu, radius, &imgin, &pimgout_opencl_gpu);
 
 	/* Save the results (parallel w/ OpenCL) */
-	bmp_data_from_rgb(&pimgout_opencl);
-	bmp_write_data_to_file(paroutfile_opencl, &pimgout_opencl);
+	bmp_data_from_rgb(&pimgout_opencl_gpu);
+	bmp_write_data_to_file(paroutfile_opencl_gpu, &pimgout_opencl_gpu);
+
+	//custom modication to check time for OpenCL cpu
+	exectime_opencl_cpu = timeit(gaussian_blur_opencl_cpu, radius, &imgin, &pimgout_opencl_cpu);
+
+	/* Save the results (parallel w/ OpenCL) */
+	bmp_data_from_rgb(&pimgout_opencl_cpu);
+	bmp_write_data_to_file(paroutfile_opencl_cpu, &pimgout_opencl_cpu);
 
 	printf("Total execution time (sequential): %lf\n", exectime_serial);
 	printf("Total execution time (omp loops): %lf\n", exectime_omp_loops);
 	printf("Total execution time (omp tasks): %lf\n", exectime_omp_tasks);
 	//custom modification to check OpenCL execution time 
-	printf("Total execution time (OpenCL): %lf\n",exectime_opencl);
+	printf("Total execution time (OpenCL gpu): %lf\n",exectime_opencl_gpu);
+	printf("Total execution time (OpenCL cpu): %lf\n",exectime_opencl_cpu);
 
 	bmp_img_free(&imgin);
 	bmp_img_free(&imgout);
 	bmp_img_free(&pimgout_loops);
 	bmp_img_free(&pimgout_tasks);
-	bmp_img_free(&pimgout_opencl);
+	bmp_img_free(&pimgout_opencl_gpu);
+	bmp_img_free(&pimgout_opencl_cpu);
 
 	return 0;
 }

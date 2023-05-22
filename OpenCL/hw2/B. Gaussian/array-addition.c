@@ -78,6 +78,10 @@ int main()
     float c[N];
     clEnqueueReadBuffer(commandQueue, bufferC, CL_TRUE, 0, sizeof(float) * N, c, 0, NULL, NULL);
 
+    for(int i = 0; i <= N-1; i++) {
+    	printf("Printing sums: %f\n", c[i]); 
+    }
+
     // Clean up
     clReleaseMemObject(bufferA);
     clReleaseMemObject(bufferB);

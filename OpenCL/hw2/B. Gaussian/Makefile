@@ -10,7 +10,7 @@ LIBS=-lm -fopenmp -lOpenCL
 
 
 array-addition: array-addition.c 
-	$(CC) -o $(ODIR)$@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -o $(ODIR)$@ $^ $(CFLAGS) -lOpenCL
 
 gaussian-blur: gaussian-blur.c
 	$(CC) -o $(ODIR)$@ $^ $(CFLAGS)  $(LIBS) 
