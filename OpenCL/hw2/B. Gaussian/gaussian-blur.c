@@ -29,6 +29,9 @@
 	} bmpheader_t;
 #pragma pack(pop)
 
+#define global 1024
+#define work_group 256 
+
 /* This is the image structure, containing all the BMP information 
  * plus the RGB channels.
  */
@@ -369,35 +372,135 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 {
 	/* TODO: Implement parallel Gaussian Blur using OpenCL */
 
-	char* source_str;
+	char* kernelSource;
 
-	if(read_kernel_from_file(&source_str, "gaussian-blur.cl") < 0){
+	if(read_kernel_from_file(&kernelSource, "gaussian-blur.cl") < 0){
 		fprintf(stderr, "Error while calling read kernel from file"); 
 		return 0; 
 	};
 
-	printf("Read kernel for GPU acceleration: \n %s\n", source_str);
+	printf("Read kernel for GPU acceleration: \n %s\n", kernelSource);
 
-	free(source_str);
-	return 0; 
+    // OpenCL setup
+    cl_platform_id platform;
+    cl_device_id device;
+    cl_context context;
+    cl_command_queue commandQueue;
+    cl_program program;
+    cl_kernel kernel;
+
+
+    cl_int err;
+
+    // Create the OpenCL context
+    clGetPlatformIDs(1, &platform, NULL);
+    clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
+    context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
+
+    // Create the command queue
+    commandQueue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
+
+    // Create the program from the kernel source code
+    program = clCreateProgramWithSource(context, 1, (const char **)&kernelSource, NULL, &err);
+    clBuildProgram(program, 1, &device, NULL, NULL, NULL);
+	
+	//create the kernel 
+	program = clCreateKernel(program, "gaussian-blur-gpu", &err);
+
+	//allocate memory on the device 
+
+	//spawn threads 
+    size_t global_size = global; 
+	size_t local_size = work_group; 
+    cl_event event;
+    clEnqueueNDRangeKernel(commandQueue, kernel, 1, NULL, &global_size, &local_size, 0, NULL, &event);
+
+    // Wait for the kernel to finish
+    clWaitForEvents(1, &event);
+
+    // Calculate the execution time
+    cl_ulong start_time, end_time;
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start_time, NULL);
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end_time, NULL);
+
+    cl_ulong execution_time = end_time - start_time;
+
+	free(kernelSource);
+	//clean up
+	clReleaseKernel(kernel);
+    clReleaseProgram(program);
+    clReleaseCommandQueue(commandQueue);
+    clReleaseContext(context);
+
+	return execution_time; 
 }
 
 /* Parallel Gaussian Blur with OpenCL */
 cl_ulong gaussian_blur_opencl_cpu(int radius, img_t *imgin, img_t *imgout)
 {
 	/* TODO: Implement parallel Gaussian Blur using OpenCL */
-	char* source_str;
 
-	if(read_kernel_from_file(&source_str, "gaussian-blur.cl") < 0) {
-		fprintf(stderr, "Error while calling read kernel from file");
+	char* kernelSource;
+
+	if(read_kernel_from_file(&kernelSource, "gaussian-blur.cl") < 0){
+		fprintf(stderr, "Error while calling read kernel from file"); 
 		return 0; 
 	};
 
-	printf("Read kernel for GPU acceleration: \n %s\n", source_str);
+	printf("Read kernel for GPU acceleration: \n %s\n", kernelSource);
 
-	free(source_str);
+    // OpenCL setup
+    cl_platform_id platform;
+    cl_device_id device;
+    cl_context context;
+    cl_command_queue commandQueue;
+    cl_program program;
+    cl_kernel kernel;
 
-	return 0;
+
+    cl_int err;
+
+    // Create the OpenCL context
+    clGetPlatformIDs(1, &platform, NULL);
+    clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
+    context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
+
+    // Create the command queue
+    commandQueue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
+
+    // Create the program from the kernel source code
+    program = clCreateProgramWithSource(context, 1, (const char **)&kernelSource, NULL, &err);
+    clBuildProgram(program, 1, &device, NULL, NULL, NULL);
+	
+	//create the kernel 
+	program = clCreateKernel(program, "gaussian-blur-gpu", &err);
+
+	//allocate memory on the device 
+
+	//spawn threads 
+    size_t global_size = global; 
+	size_t local_size = work_group; 
+    cl_event event;
+    clEnqueueNDRangeKernel(commandQueue, kernel, 1, NULL, &global_size, &local_size, 0, NULL, &event);
+
+    // Wait for the kernel to finish
+    clWaitForEvents(1, &event);
+
+    // Calculate the execution time
+    cl_ulong start_time, end_time;
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start_time, NULL);
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end_time, NULL);
+
+    cl_ulong execution_time = end_time - start_time;
+
+	free(kernelSource);
+
+	//clean up
+	clReleaseKernel(kernel);
+    clReleaseProgram(program);
+    clReleaseCommandQueue(commandQueue);
+    clReleaseContext(context);
+	return execution_time; 
 }
 
 
