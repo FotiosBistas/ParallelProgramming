@@ -246,7 +246,7 @@ void gaussian_blur_omp_loops(int radius, img_t *imgin, img_t *imgout)
 	double row, col;
 	double weightSum = 0.0, redSum = 0.0, greenSum = 0.0, blueSum = 0.0;
 	
-	omp_set_dynamic(0);
+	
 	#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum,radius,imgout,width,height) private(i,j,row,col) default(none) shared(imgin) if(height >= width)
 	for (i = 0; i < height; i++)
 	{
@@ -292,7 +292,7 @@ void gaussian_blur_omp_tasks(int radius, img_t *imgin, img_t *imgout)
 	int width = imgin->header.width, height = imgin->header.height;
 	double row, col;
 	double weightSum = 0.0, redSum = 0.0, greenSum = 0.0, blueSum = 0.0;
-	omp_set_dynamic(0);
+	
 	#pragma omp parallel private(i,j,row,col) firstprivate(weightSum,redSum,greenSum,blueSum,radius,imgout,width,height) default(none) shared(imgin)
 	#pragma omp single
 	for (i = 0; i < height; i++)
@@ -382,11 +382,11 @@ char *remove_ext(char *str, char extsep, char pathsep)
 int main(int argc, char *argv[]) 
 {
 	int i, j, radius;
-	double exectime_serial = 0.0, exectime_omp_loops = 0.0, exectime_omp_tasks = 0.0;
+	double exectime_serial = 0.0, exectime_omp_loops = 0.0, exectime_omp_tasks = 0.0, exectime_opencl = 0.0;
 	struct timeval start, stop; 
 	char *inputfile, *noextfname;   
-	char seqoutfile[128], paroutfile_loops[128], paroutfile_tasks[128];
-	img_t imgin, imgout, pimgout_loops, pimgout_tasks;
+	char seqoutfile[128], paroutfile_loops[128], paroutfile_tasks[128], paroutfile_opencl[128];
+	img_t imgin, imgout, pimgout_loops, pimgout_tasks, pimgout_opencl;
 	
 
 	//custom modification for easier tests 4 arguments  
@@ -424,15 +424,20 @@ int main(int argc, char *argv[])
 	sprintf(seqoutfile, "%s-r%d-serial.bmp", noextfname, radius);
 	sprintf(paroutfile_loops, "%s-r%d-omp-loops.bmp", noextfname, radius);
 	sprintf(paroutfile_tasks, "%s-r%d-omp-tasks.bmp", noextfname, radius);
+	//custom modification to display file with opencl 
+	sprintf(paroutfile_opencl,"%s-r%d-opencl.bmp", noextfname, radius);
 
 	bmp_read_img_from_file(inputfile, &imgin);
 	bmp_clone_empty_img(&imgin, &imgout);
 	bmp_clone_empty_img(&imgin, &pimgout_loops);
 	bmp_clone_empty_img(&imgin, &pimgout_tasks);
+	//custom modification 
+	bmp_clone_empty_img(&imgin, &pimgout_opencl);
 	bmp_rgb_alloc(&imgin);
 	bmp_rgb_alloc(&imgout);
 	bmp_rgb_alloc(&pimgout_loops);
 	bmp_rgb_alloc(&pimgout_tasks);
+	bmp_rgb_alloc(&pimgout_opencl);
 
 	printf("<<< Gaussian Blur (h=%d,w=%d,r=%d) >>>\n", imgin.header.height, 
 	       imgin.header.width, radius);
@@ -461,13 +466,24 @@ int main(int argc, char *argv[])
 	bmp_data_from_rgb(&pimgout_tasks);
 	bmp_write_data_to_file(paroutfile_tasks, &pimgout_tasks);
 		
+
+	//custom modication to check time for OpenCL 
+	exectime_opencl = timeit(gaussian_blur_opencl, radius, &imgin, &pimgout_opencl);
+
+	/* Save the results (parallel w/ OpenCL) */
+	bmp_data_from_rgb(&pimgout_opencl);
+	bmp_write_data_to_file(paroutfile_opencl, &pimgout_opencl);
+
 	printf("Total execution time (sequential): %lf\n", exectime_serial);
 	printf("Total execution time (omp loops): %lf\n", exectime_omp_loops);
 	printf("Total execution time (omp tasks): %lf\n", exectime_omp_tasks);
+	//custom modification to check OpenCL execution time 
+	printf("Total execution time (OpenCL): %lf\n",exectime_opencl);
 
 	bmp_img_free(&imgin);
 	bmp_img_free(&imgout);
 	bmp_img_free(&pimgout_loops);
+	bmp_img_free(&pimgout_tasks);
 	bmp_img_free(&pimgout_tasks);
 
 	return 0;
