@@ -345,15 +345,17 @@ void gaussian_blur_omp_tasks(int radius, img_t *imgin, img_t *imgout)
 }
 
 /* Parallel Gaussian Blur with OpenCL */
-void gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
+cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 {
 	/* TODO: Implement parallel Gaussian Blur using OpenCL */
+	return 0; 
 }
 
 /* Parallel Gaussian Blur with OpenCL */
-void gaussian_blur_opencl_cpu(int radius, img_t *imgin, img_t *imgout)
+cl_ulong gaussian_blur_opencl_cpu(int radius, img_t *imgin, img_t *imgout)
 {
 	/* TODO: Implement parallel Gaussian Blur using OpenCL */
+	return 0;
 }
 
 
@@ -487,14 +489,14 @@ int main(int argc, char *argv[])
 		
 
 	//custom modication to check time for OpenCL gpu
-	exectime_opencl_gpu = timeit(gaussian_blur_opencl_gpu, radius, &imgin, &pimgout_opencl_gpu);
+	exectime_opencl_gpu = gaussian_blur_opencl_gpu(radius, &imgin, &pimgout_opencl_gpu);
 
 	/* Save the results (parallel w/ OpenCL) */
 	bmp_data_from_rgb(&pimgout_opencl_gpu);
 	bmp_write_data_to_file(paroutfile_opencl_gpu, &pimgout_opencl_gpu);
 
 	//custom modication to check time for OpenCL cpu
-	exectime_opencl_cpu = timeit(gaussian_blur_opencl_cpu, radius, &imgin, &pimgout_opencl_cpu);
+	exectime_opencl_cpu = gaussian_blur_opencl_cpu(radius, &imgin, &pimgout_opencl_cpu);
 
 	/* Save the results (parallel w/ OpenCL) */
 	bmp_data_from_rgb(&pimgout_opencl_cpu);
@@ -504,8 +506,8 @@ int main(int argc, char *argv[])
 	printf("Total execution time (omp loops): %lf\n", exectime_omp_loops);
 	printf("Total execution time (omp tasks): %lf\n", exectime_omp_tasks);
 	//custom modification to check OpenCL execution time 
-	printf("Total execution time (OpenCL gpu): %lf\n",exectime_opencl_gpu);
-	printf("Total execution time (OpenCL cpu): %lf\n",exectime_opencl_cpu);
+	printf("Total execution time (OpenCL gpu): %lf\n",(double)exectime_opencl_gpu/1e9);
+	printf("Total execution time (OpenCL cpu): %lf\n",(double)exectime_opencl_cpu/1e9);
 
 	bmp_img_free(&imgin);
 	bmp_img_free(&imgout);

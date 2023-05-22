@@ -22,5 +22,5 @@ clear-images:
 .PHONY: clean
 
 clean:
-	rm -f *.o *~ core $(INCDIR)/*~ 
+	rm -f $(ODIR)* *~ core $(INCDIR)/*~ 
 
