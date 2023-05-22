@@ -15,3 +15,16 @@ get_global_id() uniquely identifies each work item executing the kernel
 get_local_id() uniquely identifiers each work item in a work group
 
 */
+
+
+/*
+Memory types:
+
+GLOBAL: This memory region contains global buffers and is the primary conduit for data transfers from the host
+CONSTANT: This memory region contains content that remains constant during the execution of a kernel.
+ OpenCL C program code and constant data defined in that code would be placed in this region.
+LOCAL: The local memory region is not defined by the spec to be accessible from the host (ARM A15 cores). 
+This memory is local to a work group. It can be viewed as a core local scratchpad memory and in fact for this implementation it is mapped to L2 that is reserved for this purpose. 
+The use case for local memory is for an OpenCL work-group to migrate a portion of a global buffer to/from a local buffer for performance reasons.
+PRIVATE:This memory region is for values that are private to a work-item. 
+*/
