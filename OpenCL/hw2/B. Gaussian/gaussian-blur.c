@@ -260,11 +260,11 @@ void gaussian_blur_omp_loops(int radius, img_t *imgin, img_t *imgout)
 	
 	omp_set_dynamic(OMP_SET_DYNAMIC);
 	omp_set_num_threads(OMP_THREAD_NUMBER);
-	#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum,radius,imgout,width,height) private(i,j,row,col) default(none) shared(imgin) if(height >= width)
+	#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum,radius,imgout,width,height) private(i,j,row,col) default(none) shared(imgin) if(height >= width) 
 	for (i = 0; i < height; i++)
 	{
 		
-		#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum,radius,imgout,width,height,i) private(j,row,col) default(none) shared(imgin) if(height <  width)
+		#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum,radius,imgout,width,height,i) private(j,row,col) default(none) shared(imgin) if(height < width)
 		for (j = 0; j < width ; j++) 
 		{
 			for (row = i-radius; row <= i + radius; row++)
@@ -308,6 +308,7 @@ void gaussian_blur_omp_tasks(int radius, img_t *imgin, img_t *imgout)
 	
 	omp_set_dynamic(OMP_SET_DYNAMIC);
 	omp_set_num_threads(OMP_THREAD_NUMBER);
+	omp_set_dynamic(0);
 	#pragma omp parallel private(i,j,row,col) firstprivate(weightSum,redSum,greenSum,blueSum,radius,imgout,width,height) default(none) shared(imgin)
 	#pragma omp single
 	for (i = 0; i < height; i++)
@@ -317,23 +318,27 @@ void gaussian_blur_omp_tasks(int radius, img_t *imgin, img_t *imgout)
 		{
 			for (j = 0; j < width ; j++) 
 			{
-				for (row = i-radius; row <= i + radius; row++)
+				#pragma omp task firstprivate(i,radius,imgout,width,height,j) private(row,col) default(none) shared(imgin,weightSum,redSum,greenSum,blueSum)
 				{
-					for (col = j-radius; col <= j + radius; col++) 
+					for (row = i-radius; row <= i + radius; row++)
 					{
-						int x = clamp(col, 0, width-1);
-						int y = clamp(row, 0, height-1);
-						int tempPos = y * width + x;
-						double square = (col-j)*(col-j)+(row-i)*(row-i);
-						double sigma = radius*radius;
-						double weight = exp(-square / (2*sigma)) / (3.14*2*sigma);
+						for (col = j-radius; col <= j + radius; col++) 
+						{
+							int x = clamp(col, 0, width-1);
+							int y = clamp(row, 0, height-1);
+							int tempPos = y * width + x;
+							double square = (col-j)*(col-j)+(row-i)*(row-i);
+							double sigma = radius*radius;
+							double weight = exp(-square / (2*sigma)) / (3.14*2*sigma);
 
-						redSum += imgin->red[tempPos] * weight;
-						greenSum += imgin->green[tempPos] * weight;
-						blueSum += imgin->blue[tempPos] * weight;
-						weightSum += weight;
-					}    
-				}
+							redSum += imgin->red[tempPos] * weight;
+							greenSum += imgin->green[tempPos] * weight;
+							blueSum += imgin->blue[tempPos] * weight;
+							weightSum += weight;
+						}    
+					}
+				}	
+				#pragma omp taskwait //wait for the task below the j to finish as it is essentatial for completing the algorithm 
 				imgout->red[i*width+j] = round(redSum/weightSum);
 				imgout->green[i*width+j] = round(greenSum/weightSum);
 				imgout->blue[i*width+j] = round(blueSum/weightSum);
@@ -613,12 +618,12 @@ int main(int argc, char *argv[])
 	/* Image data to R,G,B */
 	bmp_rgb_from_data(&imgin);
 
-	/* Run & time serial Gaussian Blur */
-	exectime_serial = timeit(gaussian_blur_serial, radius, &imgin, &imgout);
+	///* Run & time serial Gaussian Blur */
+	//exectime_serial = timeit(gaussian_blur_serial, radius, &imgin, &imgout);
 
-	/* Save the results (serial) */
-	bmp_data_from_rgb(&imgout);
-	bmp_write_data_to_file(seqoutfile, &imgout);
+	///* Save the results (serial) */
+	//bmp_data_from_rgb(&imgout);
+	//bmp_write_data_to_file(seqoutfile, &imgout);
 
 	/* Run & time OpenMP Gaussian Blur (w/ loops) */
 	exectime_omp_loops = timeit(gaussian_blur_omp_loops, radius, &imgin, &pimgout_loops);
@@ -635,19 +640,19 @@ int main(int argc, char *argv[])
 	bmp_write_data_to_file(paroutfile_tasks, &pimgout_tasks);
 		
 
-	//custom modication to check time for OpenCL gpu
-	exectime_opencl_gpu = gaussian_blur_opencl_gpu(radius, &imgin, &pimgout_opencl_gpu);
+	////custom modication to check time for OpenCL gpu
+	//exectime_opencl_gpu = gaussian_blur_opencl_gpu(radius, &imgin, &pimgout_opencl_gpu);
 
-	/* Save the results (parallel w/ OpenCL) */
-	bmp_data_from_rgb(&pimgout_opencl_gpu);
-	bmp_write_data_to_file(paroutfile_opencl_gpu, &pimgout_opencl_gpu);
+	///* Save the results (parallel w/ OpenCL) */
+	//bmp_data_from_rgb(&pimgout_opencl_gpu);
+	//bmp_write_data_to_file(paroutfile_opencl_gpu, &pimgout_opencl_gpu);
 
-	//custom modication to check time for OpenCL cpu
-	exectime_opencl_cpu = gaussian_blur_opencl_cpu(radius, &imgin, &pimgout_opencl_cpu);
+	////custom modication to check time for OpenCL cpu
+	//exectime_opencl_cpu = gaussian_blur_opencl_cpu(radius, &imgin, &pimgout_opencl_cpu);
 
-	/* Save the results (parallel w/ OpenCL) */
-	bmp_data_from_rgb(&pimgout_opencl_cpu);
-	bmp_write_data_to_file(paroutfile_opencl_cpu, &pimgout_opencl_cpu);
+	///* Save the results (parallel w/ OpenCL) */
+	//bmp_data_from_rgb(&pimgout_opencl_cpu);
+	//bmp_write_data_to_file(paroutfile_opencl_cpu, &pimgout_opencl_cpu);
 
 	printf("Total execution time (sequential): %lf\n", exectime_serial);
 	printf("Total execution time (omp loops): %lf\n", exectime_omp_loops);
