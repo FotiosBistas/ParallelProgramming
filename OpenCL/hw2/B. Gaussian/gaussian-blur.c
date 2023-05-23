@@ -49,8 +49,9 @@ void gaussian_blur_serial(int, img_t *, img_t *);
 void gaussian_blur_omp(int, img_t *, img_t *);
 void gaussian_blur_opencl(int, img_t *, img_t *);
 
-
-const char* img_folder = "producedImages/";
+int OMP_THREAD_NUMBER = 0; 
+int OMP_SET_DYNAMIC = 0;
+const char* IMG_FOLDER = "producedImages/";
 
 /* START of BMP utility functions */
 static
@@ -105,8 +106,8 @@ void bmp_write_data_to_file(char *fname, img_t *img)
 	bmpheader_t *bmph = &(img->header);
 	//custom modification for image folder 
 	//all images created from the algorithm are written to the folder
-	char* name_with_folder = malloc(strlen(fname) + strlen(img_folder) + 1);
-	strcpy(name_with_folder, img_folder);
+	char* name_with_folder = malloc(strlen(fname) + strlen(IMG_FOLDER) + 1);
+	strcpy(name_with_folder, IMG_FOLDER);
 	strcat(name_with_folder, fname);
 	//changed fname to name with folder 
 	file = fopen(name_with_folder, "wb");
@@ -257,7 +258,8 @@ void gaussian_blur_omp_loops(int radius, img_t *imgin, img_t *imgout)
 	double row, col;
 	double weightSum = 0.0, redSum = 0.0, greenSum = 0.0, blueSum = 0.0;
 	
-	
+	omp_set_dynamic(OMP_SET_DYNAMIC);
+	omp_set_num_threads(OMP_THREAD_NUMBER);
 	#pragma omp parallel for schedule(dynamic) firstprivate(redSum,greenSum,blueSum,weightSum,radius,imgout,width,height) private(i,j,row,col) default(none) shared(imgin) if(height >= width)
 	for (i = 0; i < height; i++)
 	{
@@ -304,6 +306,8 @@ void gaussian_blur_omp_tasks(int radius, img_t *imgin, img_t *imgout)
 	double row, col;
 	double weightSum = 0.0, redSum = 0.0, greenSum = 0.0, blueSum = 0.0;
 	
+	omp_set_dynamic(OMP_SET_DYNAMIC);
+	omp_set_num_threads(OMP_THREAD_NUMBER);
 	#pragma omp parallel private(i,j,row,col) firstprivate(weightSum,redSum,greenSum,blueSum,radius,imgout,width,height) default(none) shared(imgin)
 	#pragma omp single
 	for (i = 0; i < height; i++)
@@ -571,17 +575,15 @@ int main(int argc, char *argv[])
 
 	//custom modification for easier tests 
 	//pass threads through the command line 
-	int num_threads = atoi(argv[3]);
+	OMP_THREAD_NUMBER = atoi(argv[3]);
 
-	if(num_threads < 0){
+	if(OMP_THREAD_NUMBER <= 0){
 		fprintf(stderr, "Number of threads given to open mp should be larger than 0\n");
 		exit(1);
 	}
 
 	//setting dynamic threads 
-	printf("Setting dynamic threads to: %d\n",num_threads);
-	omp_set_dynamic(0);//don't leave the thread number up to the runtime 
-	omp_set_num_threads(num_threads);
+	printf("Setting omp threads to: %d\n", OMP_THREAD_NUMBER);
 
 	noextfname = remove_ext(inputfile, '.', '/');
 	sprintf(seqoutfile, "%s-r%d-serial.bmp", noextfname, radius);
