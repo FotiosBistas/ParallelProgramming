@@ -1,4 +1,10 @@
-__kernel void gaussian_blur(__private int radius,__constant unsigned char* red, __constant unsigned char* green, __constant unsigned char* blue)
+__kernel void gaussian_blur(__private int radius,
+__constant unsigned char* input_red, 
+__constant unsigned char* input_green, 
+__constant unsigned char* input_blue,
+__global unsigned char* output_red,
+__global unsigned char* output_green,
+__global unsigned char* output_blue)
 {
 
    int i = get_global_id(0); 
@@ -21,14 +27,14 @@ __kernel void gaussian_blur(__private int radius,__constant unsigned char* red, 
          double sigma = radius*radius;
          double weight = exp(-square / (2*sigma)) / (3.14*2*sigma);
 
-         redSum += red[tempPos] * weight;
-         greenSum += green[tempPos] * weight;
-         blueSum += blue[tempPos] * weight;
+         redSum += input_red[tempPos] * weight;
+         greenSum += input_green[tempPos] * weight;
+         blueSum += input_blue[tempPos] * weight;
          weightSum += weight;
       }    
    }
-   //imgout->red[i*width+j] = round(redSum/weightSum);
-   //imgout->green[i*width+j] = round(greenSum/weightSum);
-   //imgout->blue[i*width+j] = round(blueSum/weightSum);
+   output_red[i*width+j] = round(redSum/weightSum);
+   output_green[i*width+j] = round(greenSum/weightSum);
+   output_blue[i*width+j] = round(blueSum/weightSum);
 
 }

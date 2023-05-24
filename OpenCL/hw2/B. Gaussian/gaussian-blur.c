@@ -541,14 +541,26 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 	size_t green_size = sizeof(imgin->green);
 	size_t blue_size = sizeof(imgin->blue);
 
-	cl_mem bufferRed = clCreateBuffer(context, CL_MEM_READ_ONLY, red_size, NULL, NULL);
-	cl_mem bufferGreen = clCreateBuffer(context, CL_MEM_READ_ONLY, green_size, NULL, NULL);
-	cl_mem bufferBlue = clCreateBuffer(context, CL_MEM_READ_ONLY, blue_size, NULL, NULL);
+	cl_mem bufferInputRed = clCreateBuffer(context, CL_MEM_READ_ONLY, red_size, NULL, NULL);
+	cl_mem bufferInputGreen = clCreateBuffer(context, CL_MEM_READ_ONLY, green_size, NULL, NULL);
+	cl_mem bufferInputBlue = clCreateBuffer(context, CL_MEM_READ_ONLY, blue_size, NULL, NULL);
+
+    // Create the buffers
+	red_size = sizeof(imgout->red); 
+	green_size = sizeof(imgout->green);
+	blue_size = sizeof(imgout->blue);
+
+	cl_mem bufferOutputRed = clCreateBuffer(context, CL_MEM_WRITE_ONLY, red_size , NULL, NULL);
+	cl_mem bufferOutputGreen = clCreateBuffer(context, CL_MEM_WRITE_ONLY, green_size , NULL, NULL);
+	cl_mem bufferOutputBlue = clCreateBuffer(context, CL_MEM_WRITE_ONLY, blue_size , NULL, NULL);
     // Set the kernel arguments
 	err = clSetKernelArg(kernel, 0, sizeof(cl_int), (void *)&radius);
-	err = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&bufferRed);
-	err = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&bufferGreen);
-	err = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&bufferBlue);
+	err = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&bufferInputRed);
+	err = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&bufferInputGreen);
+	err = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&bufferInputBlue);
+	err = clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&bufferOutputRed);
+	err = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&bufferOutputGreen);
+	err = clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *)&bufferOutputBlue);
     if(err != CL_SUCCESS){
         fprintf(stderr, "Failed to set kernel arguments: %s\n", getErrorString(err));
         return 0;
@@ -574,20 +586,24 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 
     cl_ulong execution_time = end_time - start_time;
 
-    // Read the result
-	
-   // err = clEnqueueReadBuffer(commandQueue, bufferC, CL_TRUE, 0, sizeof(float) * 500, c, 0, NULL, NULL);
-   // if(err != CL_SUCCESS){
-   //     fprintf(stderr, "Failed to read buffer: %s\n", getErrorString(err));
-   //     return 0;
-   // }
+	// Read the result
+	err = clEnqueueReadBuffer(commandQueue, bufferOutputRed, CL_TRUE, 0, red_size, imgout->red, 0, NULL, NULL);
+	err = clEnqueueReadBuffer(commandQueue, bufferOutputGreen, CL_TRUE, 0, green_size, imgout->green, 0, NULL, NULL);
+	err = clEnqueueReadBuffer(commandQueue, bufferOutputBlue, CL_TRUE, 0, blue_size, imgout->blue, 0, NULL, NULL);
+	if(err != CL_SUCCESS){
+	    fprintf(stderr, "Failed to read buffer: %s\n", getErrorString(err));
+	    return 0;
+	}
 
 
     free(kernelSource);
     // Clean up
-    clReleaseMemObject(bufferRed);
-    clReleaseMemObject(bufferGreen);
-    clReleaseMemObject(bufferBlue);
+    clReleaseMemObject(bufferInputRed);
+    clReleaseMemObject(bufferInputGreen);
+    clReleaseMemObject(bufferInputBlue);
+    clReleaseMemObject(bufferOutputRed);
+    clReleaseMemObject(bufferOutputGreen);
+    clReleaseMemObject(bufferOutputBlue);
     clReleaseKernel(kernel);
     clReleaseProgram(program);
     clReleaseCommandQueue(commandQueue);
