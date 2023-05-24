@@ -535,14 +535,20 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
         return 0;
     }
 
-    int N = 1024;
 
-    // Allocate memory on the device
     // Create the buffers
-    cl_mem bufferC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * N, NULL, NULL);
+	size_t red_size = sizeof(imgin->red); 
+	size_t green_size = sizeof(imgin->green);
+	size_t blue_size = sizeof(imgin->blue);
 
+	cl_mem bufferRed = clCreateBuffer(context, CL_MEM_READ_ONLY, red_size, NULL, NULL);
+	cl_mem bufferGreen = clCreateBuffer(context, CL_MEM_READ_ONLY, green_size, NULL, NULL);
+	cl_mem bufferBlue = clCreateBuffer(context, CL_MEM_READ_ONLY, blue_size, NULL, NULL);
     // Set the kernel arguments
-    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&bufferC);
+	err = clSetKernelArg(kernel, 0, sizeof(cl_int), (void *)&radius);
+	err = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&bufferRed);
+	err = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&bufferGreen);
+	err = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&bufferBlue);
     if(err != CL_SUCCESS){
         fprintf(stderr, "Failed to set kernel arguments: %s\n", getErrorString(err));
         return 0;
@@ -569,20 +575,19 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
     cl_ulong execution_time = end_time - start_time;
 
     // Read the result
-    float c[500];
-    err = clEnqueueReadBuffer(commandQueue, bufferC, CL_TRUE, 0, sizeof(float) * 500, c, 0, NULL, NULL);
-    if(err != CL_SUCCESS){
-        fprintf(stderr, "Failed to read buffer: %s\n", getErrorString(err));
-        return 0;
-    }
+	
+   // err = clEnqueueReadBuffer(commandQueue, bufferC, CL_TRUE, 0, sizeof(float) * 500, c, 0, NULL, NULL);
+   // if(err != CL_SUCCESS){
+   //     fprintf(stderr, "Failed to read buffer: %s\n", getErrorString(err));
+   //     return 0;
+   // }
 
-    for(int i = 0; i <= 499; i++) {
-        printf("Printing sums: %f\n", c[i]);
-    }
 
     free(kernelSource);
     // Clean up
-    clReleaseMemObject(bufferC);
+    clReleaseMemObject(bufferRed);
+    clReleaseMemObject(bufferGreen);
+    clReleaseMemObject(bufferBlue);
     clReleaseKernel(kernel);
     clReleaseProgram(program);
     clReleaseCommandQueue(commandQueue);
