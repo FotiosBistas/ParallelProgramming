@@ -536,34 +536,22 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
     }
 
     int N = 1024;
-    // Input data
-    float a[N];
-    float b[N];
-    for (int i = 0; i < N; i++)
-    {
-        a[i] = (float)i;
-        b[i] = (float)i;
-    }
 
     // Allocate memory on the device
     // Create the buffers
-    cl_mem bufferA = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float) * N, a, NULL);
-    cl_mem bufferB = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float) * N, b, NULL);
     cl_mem bufferC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * N, NULL, NULL);
 
     // Set the kernel arguments
-    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&bufferA);
-    err = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&bufferB);
-    err = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&bufferC);
+    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&bufferC);
     if(err != CL_SUCCESS){
         fprintf(stderr, "Failed to set kernel arguments: %s\n", getErrorString(err));
         return 0;
     }
 
     // Spawn threads
-    const size_t global_size[2] = {imgin->header.width, imgin->header.height};
+    size_t global_size[] = {imgin-> header.width, imgin->header.height};
     cl_event event;
-    err = clEnqueueNDRangeKernel(commandQueue, kernel, 1, NULL, &global_size, NULL, 0, NULL, &event);
+    err = clEnqueueNDRangeKernel(commandQueue, kernel, 2, NULL, &global_size, NULL, 0, NULL, &event);
     if(err != CL_SUCCESS){
         fprintf(stderr, "Failed to enqueue NDRange kernel: %s\n", getErrorString(err));
         return 0;
@@ -581,21 +569,19 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
     cl_ulong execution_time = end_time - start_time;
 
     // Read the result
-    float c[N];
-    err = clEnqueueReadBuffer(commandQueue, bufferC, CL_TRUE, 0, sizeof(float) * N, c, 0, NULL, NULL);
+    float c[500];
+    err = clEnqueueReadBuffer(commandQueue, bufferC, CL_TRUE, 0, sizeof(float) * 500, c, 0, NULL, NULL);
     if(err != CL_SUCCESS){
         fprintf(stderr, "Failed to read buffer: %s\n", getErrorString(err));
         return 0;
     }
 
-    for(int i = 0; i <= N-1; i++) {
+    for(int i = 0; i <= 499; i++) {
         printf("Printing sums: %f\n", c[i]);
     }
 
     free(kernelSource);
     // Clean up
-    clReleaseMemObject(bufferA);
-    clReleaseMemObject(bufferB);
     clReleaseMemObject(bufferC);
     clReleaseKernel(kernel);
     clReleaseProgram(program);
