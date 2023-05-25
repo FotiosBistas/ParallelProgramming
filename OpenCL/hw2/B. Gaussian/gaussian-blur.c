@@ -426,6 +426,7 @@ void gaussian_blur_omp_tasks(int radius, img_t *imgin, img_t *imgout)
 	}//implicit barrier tasks must finish 
 }
 
+/* Helper function to read kernel from file*/
 size_t read_kernel_from_file(char** source_str, char* filename) {
     FILE* fp = fopen(filename, "rb");
     if (!fp) {
@@ -562,9 +563,9 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
     }
 
     // Create the buffers
-    size_t red_size = sizeof(imgin->red);
-    size_t green_size = sizeof(imgin->green);
-    size_t blue_size = sizeof(imgin->blue);
+    size_t red_size = sizeof(unsigned char) * (imgin->header.width * imgin->header.height);
+    size_t green_size = sizeof(unsigned char) * (imgin->header.width * imgin->header.height);
+    size_t blue_size = sizeof(unsigned char) * (imgin->header.width * imgin->header.height);
 
 
 	printf("Input red size: %d, Input green size: %d, Input blue size: %d\n", red_size, green_size, blue_size);
@@ -585,10 +586,6 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 		goto FAIL;
     }
 
-    // Create the buffers
-    red_size = sizeof(imgout->red);
-    green_size = sizeof(imgout->green);
-    blue_size = sizeof(imgout->blue);
 	
 	printf("Output red size: %d, output green size: %d, output blue size: %d\n", red_size, green_size, blue_size);
 
@@ -691,73 +688,6 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 	clReleaseMemObject(bufferOutputBlue);
     return (endTime - startTime);
 }
-/* Parallel Gaussian Blur with OpenCL */
-//cl_ulong gaussian_blur_opencl_cpu(int radius, img_t *imgin, img_t *imgout)
-//{
-	///* TODO: Implement parallel Gaussian Blur using OpenCL */
-
-	//char* kernelSource;
-
-	//if(read_kernel_from_file(&kernelSource, "gaussian-blur.cl") < 0){
-		//fprintf(stderr, "Error while calling read kernel from file"); 
-		//return 0; 
-	//};
-
-	//printf("Read kernel for GPU acceleration: \n %s\n", kernelSource);
-
-    //// OpenCL setup
-    //cl_platform_id platform;
-    //cl_device_id device;
-    //cl_context context;
-    //cl_command_queue commandQueue;
-    //cl_program program;
-    //cl_kernel kernel;
-
-
-    //cl_int err;
-
-    //// Create the OpenCL context
-    //clGetPlatformIDs(1, &platform, NULL);
-    //clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
-    //context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
-
-    //// Create the command queue
-    //commandQueue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
-
-    //// Create the program from the kernel source code
-    //program = clCreateProgramWithSource(context, 1, (const char **)&kernelSource, NULL, &err);
-    //clBuildProgram(program, 1, &device, NULL, NULL, NULL);
-	
-	////create the kernel 
-	//program = clCreateKernel(program, "gaussian-blur-gpu", &err);
-
-	////allocate memory on the device 
-
-	////spawn threads 
-    //size_t global_size = {0,0,0}; 
-    //cl_event event;
-    //clEnqueueNDRangeKernel(commandQueue, kernel, 1, NULL, &global_size, NULL, 0, NULL, &event);
-
-    //// Wait for the kernel to finish
-    //clWaitForEvents(1, &event);
-
-    //// Calculate the execution time
-    //cl_ulong start_time, end_time;
-    //clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start_time, NULL);
-    //clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end_time, NULL);
-
-    //cl_ulong execution_time = end_time - start_time;
-
-	//free(kernelSource);
-
-	////clean up
-	//clReleaseKernel(kernel);
-    //clReleaseProgram(program);
-    //clReleaseCommandQueue(commandQueue);
-    //clReleaseContext(context);
-	//return execution_time; 
-//}
-
 
 
 double timeit(void (*func)(), int radius, 
@@ -863,6 +793,7 @@ int main(int argc, char *argv[])
 
 	/* Image data to R,G,B */
 	bmp_rgb_from_data(&imgin);
+
 
 	///* Run & time serial Gaussian Blur */
 	//exectime_serial = timeit(gaussian_blur_serial, radius, &imgin, &imgout);
