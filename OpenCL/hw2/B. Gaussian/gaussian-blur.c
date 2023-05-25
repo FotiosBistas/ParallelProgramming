@@ -567,6 +567,8 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
     size_t blue_size = sizeof(imgin->blue);
 
 
+	printf("Input red size: %d, Input green size: %d, Input blue size: %d\n", red_size, green_size, blue_size);
+
     cl_mem bufferInputRed = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, red_size, imgin->red, &err);
     if (err != CL_SUCCESS) {
         fprintf(stderr, "Failed to create buffer for input red: %s\n", getErrorString(err));
@@ -587,6 +589,8 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
     red_size = sizeof(imgout->red);
     green_size = sizeof(imgout->green);
     blue_size = sizeof(imgout->blue);
+	
+	printf("Output red size: %d, output green size: %d, output blue size: %d\n", red_size, green_size, blue_size);
 
     cl_mem bufferOutputRed = clCreateBuffer(context, CL_MEM_WRITE_ONLY, red_size, NULL, &err);
     if (err != CL_SUCCESS) {
@@ -679,6 +683,12 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 
     // Clean up
     FAIL:release_cl_memory(&kernel, &program, &context, &commandQueue);
+	clReleaseMemObject(bufferInputRed);
+	clReleaseMemObject(bufferInputGreen);
+	clReleaseMemObject(bufferInputBlue);
+	clReleaseMemObject(bufferOutputRed);
+	clReleaseMemObject(bufferOutputGreen);
+	clReleaseMemObject(bufferOutputBlue);
     return (endTime - startTime);
 }
 /* Parallel Gaussian Blur with OpenCL */
