@@ -458,66 +458,92 @@ size_t read_kernel_from_file(char** source_str, char* filename) {
     return program_size;
 }
 
-/* Parallel Gaussian Blur with OpenCL */
+/*Release open cl memory after program execution or an error occurs*/
+void release_cl_memory(cl_kernel* kernel, 
+cl_program* program, 
+cl_context* context,
+cl_command_queue* command_queue)
+{
+	if(kernel){
+		printf("Releasing kernel\n");
+		clReleaseKernel(*kernel);
+	}
+	if(program){
+		printf("Releasing program\n");
+		clReleaseProgram(*program);
+	}
+	if(command_queue){
+		printf("Releasing command queue\n");
+  		clReleaseCommandQueue(*command_queue);
+	}
+	if(context){
+		printf("Releasing context\n");
+  		clReleaseContext(*context);
+	}	
+}
+
 cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 {
-	/* TODO: Implement parallel Gaussian Blur using OpenCL */
+    /* TODO: Implement parallel Gaussian Blur using OpenCL */
 
-	char* kernelSource;
+    char* kernelSource;
 
-	if(read_kernel_from_file(&kernelSource, "gaussian-blur.cl") <= 0){
-		fprintf(stderr, "Error while calling read kernel from file"); 
-		return 0; 
-	};
+    if (read_kernel_from_file(&kernelSource, "gaussian-blur.cl") <= 0) {
+        fprintf(stderr, "Error while calling read kernel from file");
+        return 0;
+    };
 
-	printf("Read kernel for GPU acceleration: \n %s\n", kernelSource);
+    printf("Read kernel for GPU acceleration: \n %s\n", kernelSource);
 
+    cl_ulong startTime, endTime = 0;
     // OpenCL setup
     cl_platform_id platform;
     cl_device_id device;
-    cl_context context;
-    cl_command_queue commandQueue;
-    cl_program program;
-    cl_kernel kernel;
-
+    cl_context context = NULL;
+    cl_command_queue commandQueue = NULL;
+    cl_program program = NULL;
+    cl_kernel kernel = NULL;
 
     cl_int err;
 
     // Create the OpenCL context
     err = clGetPlatformIDs(1, &platform, NULL);
-    if(err != CL_SUCCESS){
+    if (err != CL_SUCCESS) {
         fprintf(stderr, "Failed to get OpenCL platform IDs: %s\n", getErrorString(err));
-        return 0;
+		goto FAIL;
     }
 
     err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
-    if(err != CL_SUCCESS){
+    if (err != CL_SUCCESS) {
         fprintf(stderr, "Failed to get OpenCL device IDs: %s\n", getErrorString(err));
-        return 0;
+		goto FAIL;
     }
 
     context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
-    if(err != CL_SUCCESS){
+    if (err != CL_SUCCESS) {
         fprintf(stderr, "Failed to create OpenCL context: %s\n", getErrorString(err));
-        return 0;
+		goto FAIL;
     }
 
     // Create the command queue
     commandQueue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
-    if(err != CL_SUCCESS){
+    if (err != CL_SUCCESS) {
         fprintf(stderr, "Failed to create OpenCL command queue: %s\n", getErrorString(err));
-        return 0;
+        
+		goto FAIL;
+
     }
 
     // Create the program from the kernel source code
-    program = clCreateProgramWithSource(context, 1, (const char **)&kernelSource, NULL, &err);
-    if(err != CL_SUCCESS){
+    program = clCreateProgramWithSource(context, 1, (const char**)&kernelSource, NULL, &err);
+    if (err != CL_SUCCESS) {
         fprintf(stderr, "Failed to create OpenCL program: %s\n", getErrorString(err));
-        return 0;
+        
+		goto FAIL; 
     }
 
     err = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
-    if(err != CL_SUCCESS){
+    if (err != CL_SUCCESS) {
         fprintf(stderr, "Failed to build OpenCL program: %s\n", getErrorString(err));
 
         // Print the build log
@@ -525,93 +551,136 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
         clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buildLog), buildLog, NULL);
         fprintf(stderr, "Build log:\n%s\n", buildLog);
 
-        return 0;
+		goto FAIL;
     }
 
     // Create the kernel
     kernel = clCreateKernel(program, "gaussian_blur", &err);
-    if(err != CL_SUCCESS){
+    if (err != CL_SUCCESS) {
         fprintf(stderr, "Failed to create OpenCL kernel: %s\n", getErrorString(err));
-        return 0;
+		goto FAIL;
     }
 
+    // Create the buffers
+    size_t red_size = sizeof(imgin->red);
+    size_t green_size = sizeof(imgin->green);
+    size_t blue_size = sizeof(imgin->blue);
+
+
+    cl_mem bufferInputRed = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, red_size, imgin->red, &err);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to create buffer for input red: %s\n", getErrorString(err));
+		goto FAIL;
+    }
+    cl_mem bufferInputGreen = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, green_size, imgin->green, &err);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to create buffer for input green: %s\n", getErrorString(err));
+		goto FAIL;
+    }
+    cl_mem bufferInputBlue = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, blue_size, imgin->blue, &err);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to create buffer for input blue: %s\n", getErrorString(err));
+		goto FAIL;
+    }
 
     // Create the buffers
-	size_t red_size = sizeof(imgin->red); 
-	size_t green_size = sizeof(imgin->green);
-	size_t blue_size = sizeof(imgin->blue);
+    red_size = sizeof(imgout->red);
+    green_size = sizeof(imgout->green);
+    blue_size = sizeof(imgout->blue);
 
-	cl_mem bufferInputRed = clCreateBuffer(context, CL_MEM_READ_ONLY, red_size, NULL, NULL);
-	cl_mem bufferInputGreen = clCreateBuffer(context, CL_MEM_READ_ONLY, green_size, NULL, NULL);
-	cl_mem bufferInputBlue = clCreateBuffer(context, CL_MEM_READ_ONLY, blue_size, NULL, NULL);
+    cl_mem bufferOutputRed = clCreateBuffer(context, CL_MEM_WRITE_ONLY, red_size, NULL, &err);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to create buffer for output red: %s\n", getErrorString(err));
+		goto FAIL;
+    }
+    cl_mem bufferOutputGreen = clCreateBuffer(context, CL_MEM_WRITE_ONLY, green_size, NULL, &err);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to create buffer for output green: %s\n", getErrorString(err));
+		goto FAIL;
+    }
+    cl_mem bufferOutputBlue = clCreateBuffer(context, CL_MEM_WRITE_ONLY, blue_size, NULL, &err);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to create buffer for output blue: %s\n", getErrorString(err));
+		goto FAIL;
+    }
 
-    // Create the buffers
-	red_size = sizeof(imgout->red); 
-	green_size = sizeof(imgout->green);
-	blue_size = sizeof(imgout->blue);
-
-	cl_mem bufferOutputRed = clCreateBuffer(context, CL_MEM_WRITE_ONLY, red_size , NULL, NULL);
-	cl_mem bufferOutputGreen = clCreateBuffer(context, CL_MEM_WRITE_ONLY, green_size , NULL, NULL);
-	cl_mem bufferOutputBlue = clCreateBuffer(context, CL_MEM_WRITE_ONLY, blue_size , NULL, NULL);
     // Set the kernel arguments
-	err = clSetKernelArg(kernel, 0, sizeof(cl_int), (void *)&radius);
-	err = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&bufferInputRed);
-	err = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&bufferInputGreen);
-	err = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&bufferInputBlue);
-	err = clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&bufferOutputRed);
-	err = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&bufferOutputGreen);
-	err = clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *)&bufferOutputBlue);
-    if(err != CL_SUCCESS){
+    err = clSetKernelArg(kernel, 0, sizeof(cl_int), (void*)&radius);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to set kernel argument: %s\n", getErrorString(err));
+		goto FAIL;
+    }
+    err = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&bufferInputRed);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to set kernel argument: %s\n", getErrorString(err));
+		goto FAIL;
+    }
+    err = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&bufferInputGreen);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to set kernel argument: %s\n", getErrorString(err));
+		goto FAIL;
+    }
+    err = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&bufferInputBlue);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to set kernel argument: %s\n", getErrorString(err));
+		goto FAIL;
+    }
+    err = clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&bufferOutputRed);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to set kernel argument: %s\n", getErrorString(err));
+		goto FAIL;
+    }
+    err = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&bufferOutputGreen);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to set kernel argument: %s\n", getErrorString(err));
+		goto FAIL;
+    }
+    err = clSetKernelArg(kernel, 6, sizeof(cl_mem), (void*)&bufferOutputBlue);
+    if (err != CL_SUCCESS) {
         fprintf(stderr, "Failed to set kernel arguments: %s\n", getErrorString(err));
-        return 0;
+		goto FAIL;
     }
 
     // Spawn threads
-    size_t global_size[] = {imgin-> header.width, imgin->header.height};
-    cl_event event;
-    err = clEnqueueNDRangeKernel(commandQueue, kernel, 2, NULL, &global_size, NULL, 0, NULL, &event);
-    if(err != CL_SUCCESS){
-        fprintf(stderr, "Failed to enqueue NDRange kernel: %s\n", getErrorString(err));
-        return 0;
+    size_t globalWorkSize[2];
+    globalWorkSize[0] = imgin->header.width;
+    globalWorkSize[1] = imgin->header.height;
+
+    cl_event kernelEvent;
+    err = clEnqueueNDRangeKernel(commandQueue, kernel, 2, NULL, globalWorkSize, NULL, 0, NULL, &kernelEvent);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to enqueue OpenCL kernel: %s\n", getErrorString(err));
+		goto FAIL;
     }
 
-    printf("Waiting to finish");
-    // Wait for the kernel to finish
-    clWaitForEvents(1, &event);
+    // Read the output buffers
+    err = clEnqueueReadBuffer(commandQueue, bufferOutputRed, CL_TRUE, 0, red_size, imgout->red, 0, NULL, NULL);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to read output red buffer: %s\n", getErrorString(err));
+		goto FAIL;
+    }
+    err = clEnqueueReadBuffer(commandQueue, bufferOutputGreen, CL_TRUE, 0, green_size, imgout->green, 0, NULL, NULL);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to read output green buffer: %s\n", getErrorString(err));
+		goto FAIL;
+    }
+    err = clEnqueueReadBuffer(commandQueue, bufferOutputBlue, CL_TRUE, 0, blue_size, imgout->blue, 0, NULL, NULL);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Failed to read output blue buffer: %s\n", getErrorString(err));
+		goto FAIL;
+    }
 
-    // Calculate the execution time
-    cl_ulong start_time, end_time;
-    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start_time, NULL);
-    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end_time, NULL);
+    // Wait for kernel completion
+    clWaitForEvents(1, &kernelEvent);
 
-    cl_ulong execution_time = end_time - start_time;
+    // Get profiling information
+    clGetEventProfilingInfo(kernelEvent, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL);
+    clGetEventProfilingInfo(kernelEvent, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, NULL);
 
-	// Read the result
-	err = clEnqueueReadBuffer(commandQueue, bufferOutputRed, CL_TRUE, 0, red_size, imgout->red, 0, NULL, NULL);
-	err = clEnqueueReadBuffer(commandQueue, bufferOutputGreen, CL_TRUE, 0, green_size, imgout->green, 0, NULL, NULL);
-	err = clEnqueueReadBuffer(commandQueue, bufferOutputBlue, CL_TRUE, 0, blue_size, imgout->blue, 0, NULL, NULL);
-	if(err != CL_SUCCESS){
-	    fprintf(stderr, "Failed to read buffer: %s\n", getErrorString(err));
-	    return 0;
-	}
-
-
-    free(kernelSource);
     // Clean up
-    clReleaseMemObject(bufferInputRed);
-    clReleaseMemObject(bufferInputGreen);
-    clReleaseMemObject(bufferInputBlue);
-    clReleaseMemObject(bufferOutputRed);
-    clReleaseMemObject(bufferOutputGreen);
-    clReleaseMemObject(bufferOutputBlue);
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    clReleaseCommandQueue(commandQueue);
-    clReleaseContext(context);
-
-    return execution_time;
+    FAIL:release_cl_memory(&kernel, &program, &context, &commandQueue);
+    return (endTime - startTime);
 }
-
 /* Parallel Gaussian Blur with OpenCL */
 //cl_ulong gaussian_blur_opencl_cpu(int radius, img_t *imgin, img_t *imgout)
 //{
