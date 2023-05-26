@@ -645,9 +645,10 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
     }
 
     // Spawn threads
-    size_t globalWorkSize[2];
-    globalWorkSize[0] = imgin->header.width;
-    globalWorkSize[1] = imgin->header.height;
+    const size_t globalWorkSize[2] = {imgin->header.width, imgin->header.height};
+
+	//modify local size 
+	const size_t localWorkSize[2]; 
 
     cl_event kernelEvent;
     err = clEnqueueNDRangeKernel(commandQueue, kernel, 2, NULL, globalWorkSize, NULL, 0, NULL, &kernelEvent);
@@ -806,23 +807,23 @@ int main(int argc, char *argv[])
 	//bmp_write_data_to_file(seqoutfile, &imgout);
 
 	/* Run & time OpenMP Gaussian Blur (w/ loops) */
-	exectime_omp_loops = timeit(gaussian_blur_omp_loops, radius, &imgin, &pimgout_loops);
-	/* Save the results (parallel w/ loops) */
-	bmp_data_from_rgb(&pimgout_loops);
-	bmp_write_data_to_file(paroutfile_loops, &pimgout_loops);
-	/* Run & time OpenMP Gaussian Blur (w/ tasks) */
-	exectime_omp_tasks = timeit(gaussian_blur_omp_tasks, radius, &imgin, &pimgout_tasks);
-	/* Save the results (parallel w/ tasks) */
-	bmp_data_from_rgb(&pimgout_tasks);
-	bmp_write_data_to_file(paroutfile_tasks, &pimgout_tasks);
+	//exectime_omp_loops = timeit(gaussian_blur_omp_loops, radius, &imgin, &pimgout_loops);
+	///* Save the results (parallel w/ loops) */
+	//bmp_data_from_rgb(&pimgout_loops);
+	//bmp_write_data_to_file(paroutfile_loops, &pimgout_loops);
+	///* Run & time OpenMP Gaussian Blur (w/ tasks) */
+	//exectime_omp_tasks = timeit(gaussian_blur_omp_tasks, radius, &imgin, &pimgout_tasks);
+	///* Save the results (parallel w/ tasks) */
+	//bmp_data_from_rgb(&pimgout_tasks);
+	//bmp_write_data_to_file(paroutfile_tasks, &pimgout_tasks);
 		
 
 	//custom modication to check time for OpenCL gpu
-	//exectime_opencl_gpu = gaussian_blur_opencl_gpu(radius, &imgin, &pimgout_opencl_gpu);
+	exectime_opencl_gpu = gaussian_blur_opencl_gpu(radius, &imgin, &pimgout_opencl_gpu);
 
-	///* Save the results (parallel w/ OpenCL) */
-	//bmp_data_from_rgb(&pimgout_opencl_gpu);
-	//bmp_write_data_to_file(paroutfile_opencl_gpu, &pimgout_opencl_gpu);
+	/* Save the results (parallel w/ OpenCL) */
+	bmp_data_from_rgb(&pimgout_opencl_gpu);
+	bmp_write_data_to_file(paroutfile_opencl_gpu, &pimgout_opencl_gpu);
 
 	////custom modication to check time for OpenCL cpu
 	//exectime_opencl_cpu = gaussian_blur_opencl_cpu(radius, &imgin, &pimgout_opencl_cpu);
