@@ -644,14 +644,35 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 		goto FAIL;
     }
 
+
+
     // Spawn threads
     const size_t globalWorkSize[2] = {imgin->header.width, imgin->header.height};
 
-	//modify local size 
-	const size_t localWorkSize[2]; 
+	//modify local size
+	//preffered multiple of local work group 64 
+	//max work group size is 256
+	const size_t localWorkSize[2] = {2,128}; 
+
+	//create the local memory 
+  //  err = clSetKernelArg(kernel, 7, sizeof(unsigned char) * (localWorkSize[0] * localWorkSize[1]), NULL);
+  //  if (err != CL_SUCCESS) {
+  //      fprintf(stderr, "Failed to set kernel argument: %s\n", getErrorString(err));
+		//goto FAIL;
+  //  }
+  //  err = clSetKernelArg(kernel, 8, sizeof(unsigned char) * (localWorkSize[0] * localWorkSize[1]), NULL);
+  //  if (err != CL_SUCCESS) {
+  //      fprintf(stderr, "Failed to set kernel argument: %s\n", getErrorString(err));
+		//goto FAIL;
+  //  }
+  //  err = clSetKernelArg(kernel, 9, sizeof(unsigned char) * (localWorkSize[0] * localWorkSize[1]), NULL);
+  //  if (err != CL_SUCCESS) {
+  //      fprintf(stderr, "Failed to set kernel arguments: %s\n", getErrorString(err));
+		//goto FAIL;
+  //  }
 
     cl_event kernelEvent;
-    err = clEnqueueNDRangeKernel(commandQueue, kernel, 2, NULL, globalWorkSize, NULL, 0, NULL, &kernelEvent);
+    err = clEnqueueNDRangeKernel(commandQueue, kernel, 2, NULL, globalWorkSize, localWorkSize, 0, NULL, &kernelEvent);
     if (err != CL_SUCCESS) {
         fprintf(stderr, "Failed to enqueue OpenCL kernel: %s\n", getErrorString(err));
 		goto FAIL;
@@ -799,7 +820,7 @@ int main(int argc, char *argv[])
 	bmp_rgb_from_data(&imgin);
 
 
-	/* Run & time serial Gaussian Blur */
+	///* Run & time serial Gaussian Blur */
 	//exectime_serial = timeit(gaussian_blur_serial, radius, &imgin, &imgout);
 
 	///* Save the results (serial) */
