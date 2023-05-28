@@ -34,9 +34,8 @@ __local unsigned char* local_blue)
     // Synchronize to ensure all data is loaded into local memory
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    double row,col; 
-    double weightSum = 0.0, redSum = 0.0, greenSum = 0.0, blueSum = 0.0;
-
+    float row,col; 
+    float weightSum = 0.0, redSum = 0.0, greenSum = 0.0, blueSum = 0.0;
 
     for (int row = localX - radius; row <= localX + radius; row++)
     {
@@ -45,9 +44,9 @@ __local unsigned char* local_blue)
             int x = clamp(col, 0, localSizeX - 1);
             int y = clamp(row, 0, localSizeY - 1);
             int tempPos = y * localSizeX + x;
-            double square = (col - localY) * (col - localY) + (row - localX) * (row - localX);
-            double sigma = radius * radius;
-            double weight = exp(-square / (2 * sigma)) / (3.14 * 2 * sigma);
+            float square = (col - localY) * (col - localY) + (row - localX) * (row - localX);
+            float sigma = radius * radius;
+            float weight = exp(-square / (2 * sigma)) / (3.14 * 2 * sigma);
 
             redSum += local_red[tempPos] * weight;
             greenSum += local_green[tempPos] * weight;
