@@ -491,7 +491,7 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
     char* kernelSource;
 
     if (read_kernel_from_file(&kernelSource, "gaussian-blur-vectors.cl") <= 0) {
-        fprintf(stderr, "Error while calling read kernel from file");
+        fprintf(stderr, "Error while calling read kernel from file\n");
         return 0;
     };
 
