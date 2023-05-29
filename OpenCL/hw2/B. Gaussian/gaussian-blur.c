@@ -490,7 +490,7 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 
     char* kernelSource;
 
-    if (read_kernel_from_file(&kernelSource, "gaussian-blur.cl") <= 0) {
+    if (read_kernel_from_file(&kernelSource, "gaussian-blur-vectors.cl") <= 0) {
         fprintf(stderr, "Error while calling read kernel from file");
         return 0;
     };
@@ -655,21 +655,21 @@ cl_ulong gaussian_blur_opencl_gpu(int radius, img_t *imgin, img_t *imgout)
 	const size_t localWorkSize[2] = {2,128}; 
 
 	//create the local memory 
-  //  err = clSetKernelArg(kernel, 7, sizeof(unsigned char) * (localWorkSize[0] * localWorkSize[1]), NULL);
-  //  if (err != CL_SUCCESS) {
-  //      fprintf(stderr, "Failed to set kernel argument: %s\n", getErrorString(err));
-		//goto FAIL;
-  //  }
-  //  err = clSetKernelArg(kernel, 8, sizeof(unsigned char) * (localWorkSize[0] * localWorkSize[1]), NULL);
-  //  if (err != CL_SUCCESS) {
-  //      fprintf(stderr, "Failed to set kernel argument: %s\n", getErrorString(err));
-		//goto FAIL;
-  //  }
-  //  err = clSetKernelArg(kernel, 9, sizeof(unsigned char) * (localWorkSize[0] * localWorkSize[1]), NULL);
-  //  if (err != CL_SUCCESS) {
-  //      fprintf(stderr, "Failed to set kernel arguments: %s\n", getErrorString(err));
-		//goto FAIL;
-  //  }
+	//err = clSetKernelArg(kernel, 7, sizeof(unsigned char) * (localWorkSize[0] * localWorkSize[1]), NULL);
+	//if (err != CL_SUCCESS) {
+	//	fprintf(stderr, "Failed to set kernel argument: %s\n", getErrorString(err));
+	//goto FAIL;
+	//}
+	//err = clSetKernelArg(kernel, 8, sizeof(unsigned char) * (localWorkSize[0] * localWorkSize[1]), NULL);
+	//if (err != CL_SUCCESS) {
+	//	fprintf(stderr, "Failed to set kernel argument: %s\n", getErrorString(err));
+	//goto FAIL;
+	//}
+	//err = clSetKernelArg(kernel, 9, sizeof(unsigned char) * (localWorkSize[0] * localWorkSize[1]), NULL);
+	//if (err != CL_SUCCESS) {
+	//	fprintf(stderr, "Failed to set kernel arguments: %s\n", getErrorString(err));
+	//goto FAIL;
+	//}
 
     cl_event kernelEvent;
     err = clEnqueueNDRangeKernel(commandQueue, kernel, 2, NULL, globalWorkSize, localWorkSize, 0, NULL, &kernelEvent);
