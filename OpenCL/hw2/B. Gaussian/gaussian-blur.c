@@ -832,7 +832,7 @@ int main(int argc, char *argv[])
 	///* Save the results (parallel w/ loops) */
 	//bmp_data_from_rgb(&pimgout_loops);
 	//bmp_write_data_to_file(paroutfile_loops, &pimgout_loops);
-	///* Run & time OpenMP Gaussian Blur (w/ tasks) */
+	/* Run & time OpenMP Gaussian Blur (w/ tasks) */
 	//exectime_omp_tasks = timeit(gaussian_blur_omp_tasks, radius, &imgin, &pimgout_tasks);
 	///* Save the results (parallel w/ tasks) */
 	//bmp_data_from_rgb(&pimgout_tasks);
@@ -841,7 +841,6 @@ int main(int argc, char *argv[])
 
 	//custom modication to check time for OpenCL gpu
 	exectime_opencl_gpu = gaussian_blur_opencl_gpu(radius, &imgin, &pimgout_opencl_gpu);
-
 	/* Save the results (parallel w/ OpenCL) */
 	bmp_data_from_rgb(&pimgout_opencl_gpu);
 	bmp_write_data_to_file(paroutfile_opencl_gpu, &pimgout_opencl_gpu);
