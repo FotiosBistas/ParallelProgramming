@@ -1,5 +1,5 @@
 # ParallelProgramming
-This repository contains the exercise sets assigned in the 2023 parallel-programming class in AUEB.  
+This repository contains a collection of exercises from the Parallel Programming class taught by Andreas Basilakhs. The exercises focus on two widely used parallel programming frameworks: OpenMP and OpenCL. In this introduction, we will provide an overview of OpenMP, OpenCL.
 
 # OpenMP
 
