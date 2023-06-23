@@ -10,3 +10,11 @@ By using directives, programmers can easily identify parallelizable sections of 
 You can find a detailed report of the exercise set in the OpenMP directory. 
 
 # OpenCL
+
+OpenCL, short for Open Computing Language, is an open standard for heterogeneous computing that enables software developers to harness the computational power of different processing devices, such as CPUs, GPUs, and FPGAs. Unlike OpenMP, which focuses on shared memory systems, OpenCL is designed to work across a wide range of devices with different memory architectures.
+
+With OpenCL, developers can write programs using a variant of the C programming language to execute tasks on multiple devices simultaneously. It provides a unified programming model that abstracts the underlying hardware, allowing efficient utilization of various computational resources. OpenCL's versatility makes it suitable for a variety of applications, including scientific simulations, image processing, and machine learning.
+
+Within the realm of OpenCL, it is important to note that the exercises included in this repository were executed on a GPU, due to the CPU not being recognized by OpenCL (Graphics Processing Unit). GPUs excel at parallel computation due to their high number of cores and specialized architecture optimized for parallel workloads. By utilizing the capabilities of the GPU, you can explore the potential for significant speedup and improved performance in your parallel programming endeavors. 
+
+You can find a detailed report in the OpenCL directory. 
