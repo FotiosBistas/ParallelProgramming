@@ -1,5 +1,5 @@
 # ParallelProgramming
-This repository contains a collection of exercises from the Parallel Programming class taught by Andreas Basilakhs. The exercises focus on two widely used parallel programming frameworks: OpenMP and OpenCL. In this introduction, we will provide an overview of OpenMP, OpenCL.
+This repository contains a collection of exercises from the Parallel Programming class taught by Andreas Basilakhs. The exercises focus on two widely used parallel programming frameworks: OpenMP and OpenCL. In this introduction, an overview of OpenMP, OpenCL is provided and detailed reports can be found in the repsective directories.
 
 # OpenMP
 
